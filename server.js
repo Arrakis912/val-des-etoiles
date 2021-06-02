@@ -10,6 +10,7 @@ class Card{
         this.id = id;
         this.visibility = visibility;
         this.isHead = (this.value === 'J' || this.value === 'Q' || this.value === 'K')? true : false;
+        this.owner = -1;
     }
     getRawValue(){
         switch (this.value) {
@@ -140,8 +141,7 @@ class Creature{
     }
     ripCard(color){
         const previousType = this.type;
-        this.game.river.push(this[color]);
-        this[color] = undefined;
+        this.buryCard(color);
         this.type = this.computeType();
         if(this.type === undefined){
             if(previousType === "spectre" || previousType === "spectre royal"|| previousType === "dame noire"|| previousType === "damne"){
@@ -153,6 +153,7 @@ class Creature{
         }
     }
     buryCard(aspect){
+        this[aspect].owner = 'River';
         this.game.river.push(this[aspect]);
         this[aspect] = undefined;
     }
@@ -173,11 +174,58 @@ class Creature{
         }
     }
     computeValue(color){
-        if(this[color]==undefined) return 0;
-        this.revealCard(color);
-        if(this[color].isHead())
-        let baseValue = this[color].value;
-
+        const card = this[color];
+        if(card===undefined) return 0;
+        let baseValue = card.value;
+        if(card.isHead()){
+            if (baseValue === "J") {
+                const colorIsRed = color==="heart" || color==="spirit";
+                if (card.color === "sang") {
+                    baseValue = colorIsRed?6:1;
+                } else if (card.color === "cendre"){
+                    baseValue = colorIsRed?1:6;
+                } else if (this.head.color === card.color && color === card.color){
+                    baseValue = 7;
+                }
+            } else {
+                return 0;
+            }
+        }
+        if(this.nedemoneTokens !== undefined){
+            baseValue+= this.nedemoneTokens[color];
+        }
+        switch (color) {
+            case "heart":
+                if(this.type === "enfant"){
+                    return baseValue+1;
+                }
+                break;
+            case "weapon":
+                if(this.type === "chevalier" || this.type === "spectre royal"){
+                    return baseValue+1;
+                }
+                break;
+            case "spirit":
+                if(this.type === "magicien" || this.type === "spectre royal"){
+                    return baseValue+1;
+                }
+                break;
+            case "power":
+                if(this.type === "fou"){
+                    return baseValue+1;
+                }
+                if(this.type === "dame noire"){
+                    return baseValue+2;
+                }
+                if(this.type === "spectre royal"){
+                    return baseValue+3;
+                }
+                break;
+            default:
+                console.error(`unrecognised color : ${color}`);
+                break;
+        }
+        return baseValue;
     }
     computeType(){
         if (this.heart == undefined){
@@ -231,6 +279,7 @@ class PlayerStatus{
     obtainCard(card){
         this.hand.push(card);
         card.visibility = 'Owner';
+        card.owner = this.name;
     }
     unRevealAll(){
         this.creatures.forEach((creature)=>{
@@ -250,11 +299,11 @@ class GameStatus{
         this.activePlayer = -1;
         this.phase = -1;
         this.summary = [];
-        this.killingOff = undefined;
+        this.interruptFlow = undefined;
     }
 
     setGameStateToKillingCreature(creature){
-        this.killingOff = {"activePlayer" : this.activePlayer, "phase" : phase, "creature" : creature};
+        this.interruptFlow = {"activePlayer" : this.activePlayer, "phase" : phase, "type" : "bury", "creature" : creature};
         this.phase = -2;
     }
 
@@ -294,7 +343,7 @@ class GameStatus{
 
     startGame(){
         this.started = true;
-        players.forEach(player => {
+        this.players.forEach(player => {
             player.ray = this.ruleSet === "Helios" ? 36 : 25;
         }, this);
         this.source = makeSource();
@@ -323,7 +372,7 @@ class GameStatus{
             let sorted = [...cardValues].sort((a,b)=>a-b);
             foundFirstPlayer = (sorted[0] != sorted[1]);
             if (foundFirstPlayer) {
-                this.activePlayer = cardValues.findIndex(sorted[0]);
+                this.activePlayer = cardValues.findIndex((value) => value === sorted[0]);
             }
             else{
                 cardGroup = [];
@@ -347,49 +396,56 @@ class GameStatus{
                 if (this.phase != 0) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
+                this.phase = 1;
                 break;
             }
             case "makeCreature":{
                 if (this.phase != 0) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
+                this.phase = 1;
                 break;
             }
             case "CreatureAction":{
                 if (this.phase != 1) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
-                const color = moveDescription.color;
-                const creature = moveDescription.creature;
-
+                const aspect = moveDescription.aspect;
+                const creatureId = moveDescription.creature;
+                const targetId = moveDescription.creature;
+                const creature = this.players[playerId].creatures.find((item)=>item.id === creatureId);
+                creature.useAspect(aspect);
                 break;
             }
             case "buryCreature":{
-                if (this.phase != -2) {
-                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                if (this.phase != -2 || this.interruptFlow === undefined || this.interruptFlow.type !=="bury") {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interruptFlow}`};
                 }
                 const aspectToBury = moveDescription.card;
-                this.killingOff.creature.buryCard(aspectToBury);
-                if (this.killingOff.creature.endOfBurial()) {
-                    this.phase = this.killingOff.phase;
-                    this.activePlayer = this.killingOff.activePlayer;
+                this.interruptFlow.creature.buryCard(aspectToBury);
+                if (this.interruptFlow.creature.endOfBurial()) {
+                    this.phase = this.interruptFlow.phase;
+                    this.activePlayer = this.interruptFlow.activePlayer;
                 }
                 break;
             }
-            case "endTurn":{
-                if (this.phase != 2) {
+            case "endPhase":{
+                if (this.phase === 0) {
+                    this.phase = 1;
+                } else if (this.phase === 1){//end Turn
+                    //draw card
+                    this.activePlayerDrawCard(moveDescription.drawFrom);
+                    //set active player to next player and restart turn, and unreveal all revealed cards of both
+                    this.activePlayer.unRevealAll();
+                    this.activePlayer += 1;
+                    if (this.activePlayer >= this.players.length) {
+                        this.activePlayer = 0;
+                    }
+                    this.activePlayer.unRevealAll();
+                    this.phase = 0;
+                } else {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
-                //draw card
-                this.activePlayerDrawCard(moveDescription.drawFrom);
-                //set active player to next player and restart turn, and unreveal all revealed cards of both
-                this.activePlayer.unRevealAll();
-                this.activePlayer += 1;
-                if (this.activePlayer >= this.players.length) {
-                    this.activePlayer = 0;
-                }
-                this.activePlayer.unRevealAll();
-                this.phase = 0;
                 break;
             }
             default:

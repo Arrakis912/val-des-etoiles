@@ -1,10 +1,11 @@
 import { QueryManager } from "./clientQueryManager.js"
 
-const CARDHEIGHT = 200;
-const CARDWIDTH = 100;
-const CARDBORDER = 3;
-const CARDLIST = [];
-let SOURCEPOSITION = [45,5]
+const CARDHEIGHT = 50;
+const CARDWIDTH = 50;
+const CARDBORDER = 2;
+const CARDHEIGHTWITHBORDER = CARDHEIGHT + (2*CARDBORDER);
+const CARDWIDTHWITHBORDER = CARDWIDTH + (2*CARDBORDER);
+let SOURCEPOSITION = [5*CARDHEIGHTWITHBORDER,5]
 
 function updateUIInterval(){
     if (window.UPDATEUI) {
@@ -34,70 +35,156 @@ function disconnect(){
     document.getElementById("initPage").style.display = 'block';
 }
 
+function sendMove(move){
+    QueryManager.playRequest(move);
+    window.skipUpdateRequest = false;
+}
+
 function updateUI(){
     const oldStatus = window.PREVIOUSGAMESTATUS;
     const gameStatus = window.GAMESTATUS;
-    const activePlayerName = gameStatus.players[gameStatus.activePlayer];
-    const playerIndex = gameState.players.findIndex((elem)=>elem.name===window.STARNAME);
+    const activePlayerName = gameStatus.players[gameStatus.activePlayer].name;
+    const playerIndex = gameStatus.players.findIndex((elem)=>elem.name===window.STARNAME);
+    const playerIsActive = (window.STARNAME === activePlayerName);
     let opIndex = playerIndex + 1;
     if (opIndex >= gameStatus.players.length) {
         opIndex = 0;
     }
-    let gameBoard = `${drawField(gameStatus, opIndex, true)}${drawSource(gameState.source.length)}${drawRiver(gameStatus)}${drawField(gameStatus, playerIndex, false)}`;
-    document.getElementById("gameBoard").innerHTML = gameBoard;
-    document.getElementById("gameInfo").innerText = `active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${(window.STARNAME !== activePlayerName) ? "Waiting for other player's action" : textInstruction(gameStatus)}`;
+    let gameBoard = document.getElementById("gameBoard");
+    gameBoard.innerHTML='';
+    gameBoard.appendChild(makeInfoLine(gameStatus,activePlayerName,playerIsActive));
+    gameBoard.appendChild(makeButtons(gameStatus, playerIndex, playerIsActive));
+    gameBoard.appendChild(makeField(gameStatus, opIndex, true));
+    gameBoard.appendChild(makeSource(gameStatus.source.length));
+    gameBoard.appendChild(makeRiver(gameStatus));
+    gameBoard.appendChild(makeField(gameStatus, playerIndex, false));
+    // let gameBoard = `${drawInfoLine(gameStatus,activePlayerName,playerIsActive)}${drawButtons(gameStatus, playerIndex, playerIsActive)}${drawField(gameStatus, opIndex, true)}${drawSource(gameStatus.source.length)}${drawRiver(gameStatus)}${drawField(gameStatus, playerIndex, false)}`;
+    // document.getElementById("gameBoard").innerHTML = gameBoard;
     window.PREVIOUSGAMESTATUS = gameStatus;
-    if(window.STARNAME === activePlayerName){
+    if(playerIsActive){
         //Stop requesting update as we are the one the game is waiting
         window.skipUpdateRequest = true;
     }
 }
 
-function drawSource(cardsLeft){
-    return `<label id="Source" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px">${cardsLeft}</label>`
+function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
+    let line = document.createElement('label');
+    line.setAttribute('id','GameInfo');
+    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: 0px; left: 0px`;
+    line.innerHTML = `active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}`;
+    return line;
+    // return `<label id="GameInfo" style="height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: 0px; left: 0px">active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}</label>`
 }
 
-function drawRiver(gameState){
-    let river = "";
-    let riverFlow = 0;
-    gameState.river.forEach(card => {
-        river += drawCardFront(card, riverFlow, 0);
-        riverFlow += CARDWIDTH;
+function makeButtons(gameStatus, playerIndex, playerIsActive){
+    let line = document.createElement('div');
+    line.setAttribute('id','GameButtons');
+    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px`
+    let skipPhaseButton = document.createElement('button');
+    skipPhaseButton.setAttribute('id','skipPhaseButton');
+    skipPhaseButton.innerHTML = 'Finir Phase';
+    skipPhaseButton.addEventListener('click', clickGameButtonSkip);
+    line.appendChild(skipPhaseButton);
+    return line;
+    // let buttons = "";
+    // buttons += `<button id="skipPhaseButton" onclick="clickGameButtonSkip()">Finir Phase</button>`;
+    // return `<div id="GameButtons" style="height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px">${buttons}</div>`
+}
+
+function clickGameButtonSkip(){
+    sendMove({type:"endPhase"});
+}
+
+function makeSource(cardsLeft){
+    let source = document.createElement('label');
+    source.setAttribute('id', 'Source');
+    source.innerHTML = `${cardsLeft}`;
+    source.style=`height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px`;
+    return source;
+    // return `<label id="Source" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px">${cardsLeft}</label>`
+}
+
+function makeRiver(gameStatus){
+    let river = document.createElement('div');
+    river.setAttribute('id','River');
+    river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px`;
+    let offset = 0;
+    gameStatus.river.forEach(card=>{
+        river.appendChild(makeCardFront(card,offset,0));
+        offset += CARDWIDTH;
     });
-    return `<div id="River" style="border: 2px dotted black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px">${river}</div>`
+    return river;
+    // let river = "";
+    // let riverFlow = 0;
+    // gameStatus.river.forEach(card => {
+    //     river += makeCardFront(card, riverFlow, 0);
+    //     riverFlow += CARDWIDTH;
+    // });
+    // return `<div id="River" style="position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px">${river}</div>`
 }
 
-function drawField(gameState, playerId, isOpponent){
-    const cardHeightWithBorder = CARDHEIGHT+2*CARDBORDER;
-    return `<div id="${isOpponent?"Opponent":"Player"}" style = "${isOpponent?"height:"+(SOURCEPOSITION[0]-cardHeightWithBorder)+"px;":""}position: absolute; top: ${(isOpponent?0:SOURCEPOSITION[0]) + cardHeightWithBorder}px; left: ${0}px">${drawPlayerHand(gameState, playerId,isOpponent)}${drawPlayerCreatures(gameState, playerId,isOpponent)}</div>`
+function makeField(gameStatus, playerId, isOpponent){
+    let field = document.createElement('div');
+    field.setAttribute('id', `${isOpponent?"Opponent":"Player"}`);
+    field.style = `height:${4*CARDHEIGHTWITHBORDER}px; position: absolute; top: ${(isOpponent?0:SOURCEPOSITION[0]) + CARDHEIGHTWITHBORDER}px; left: ${0}px`;
+    field.appendChild(makePlayerHand(gameStatus, playerId,isOpponent));
+    field.appendChild(makePlayerCreatures(gameStatus, playerId,isOpponent));
+    return field;
+    // return `<div id="${isOpponent?"Opponent":"Player"}" style = "height:${4*CARDHEIGHTWITHBORDER}px; position: absolute; top: ${(isOpponent?0:SOURCEPOSITION[0]) + CARDHEIGHTWITHBORDER}px; left: ${0}px">${drawPlayerHand(gameStatus, playerId,isOpponent)}${drawPlayerCreatures(gameStatus, playerId,isOpponent)}</div>`
 }
 
-function drawPlayerHand(gameState, playerId, isOp){
-    let hand = "";
-    let handFlow = 0;
-    gameState.players[playerId].hand.forEach(card => {
-        hand += drawCardFront(card, handFlow, 0);
-        handFlow += CARDWIDTH;
+function makePlayerHand(gameStatus, playerId, isOp){
+    let hand = document.createElement('div');
+    hand.setAttribute('id', `${isOp?"Op":""}Hand`);
+    hand.style = `position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px`;
+    let offset = 0;
+    gameStatus.players[playerId].hand.forEach(card => {
+        hand.appendChild(isOp?makeCardBack(card, offset, 0):makeCardFront(card, offset, 0));
+        offset += CARDWIDTH;
     });
-    return `<div id="${isOp?"Op":""}Hand" style="position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px">${hand}</div>`
+    return hand;
+    // let hand = "";
+    // let offset = 0;
+    // gameStatus.players[playerId].hand.forEach(card => {
+    //     hand += isOp?(makeCardBack(card, offset, 0)):(makeCardFront(card, offset, 0));
+    //     offset += CARDWIDTH;
+    // });
+    // return `<div id="${isOp?"Op":""}Hand" style="position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px">${hand}</div>`
 }
 
-function drawPlayerCreatures(gameState, playerId, isOp){
-    let terrain = "";
-    let terrainFlow = 0;
-    const cardWidthWithBorder = CARDWIDTH+2*CARDBORDER;
-    const cardHeightWithBorder = CARDHEIGHT+2*CARDBORDER;
-    gameState.players[playerId].creatures.forEach(creature => {
-        terrain += drawCreature(creature, terrainFlow, 0);
-        terrainFlow += 3*cardWidthWithBorder;
+function makePlayerCreatures(gameStatus, playerId, isOp){
+    let terrain = document.createElement('div');
+    terrain.setAttribute('id', `${isOp?"Op":""}Creatures`);
+    terrain.style = `position: absolute; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: ${0}px`
+    let offset = 0;
+    gameStatus.players[playerId].creatures.forEach(creature => {
+        terrain.appendChild(makeCreature(creature, offset, 0));
+        offset += 3*CARDWIDTHWITHBORDER;
     });
-    return `<div id="${isOp?"Op":""}Creatures" style="position: absolute; ${isOp?"top":"bottom"}: ${cardHeightWithBorder}px; left: ${0}px">${terrain}</div>`
+    return terrain;
+    // let terrain = "";
+    // let offset = 0;
+    // gameStatus.players[playerId].creatures.forEach(creature => {
+    //     terrain += drawCreature(creature, offset, 0);
+    //     offset += 3*CARDWIDTHWITHBORDER;
+    // });
+    // return `<div id="${isOp?"Op":""}Creatures" style="position: absolute; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: ${0}px">${terrain}</div>`
 }
 
 function textInstruction(gameStatus){
     switch (gameStatus.phase) {
-        case -2:
-            return "Enterrement : Selectionner la prochaine carte à enterrer";
+        case -2:{
+            if(gameStatus.interruptFlow === undefined){
+                return "ERROR! NO INTERUPTFLOW ELEMENT IN A PHASE -2 GAME STATE !"
+            }
+            const type = gameStatus.interruptFlow.type;
+            if(type === "bury"){
+                return "Enterrement : clicker sur la prochaine carte à envoyer à la rivière."
+            } else if (type === "multiAction") {
+                return "Action Multiple : clicker sur la rivière ou la source pour y piocher, ou sur la prochaine carte ciblée pour révéler/attacker (le joker de cendre révèle PUIS attaque)"
+            }
+            return `Tour interrompu : type d'interruption non reconnue ${type}`;
+        }
         case -1:
             return "starting game phase : should not be accessible here !";
         case 0:
@@ -109,39 +196,67 @@ function textInstruction(gameStatus){
     }
 }
 
-drawCard(card,left,top){
+function makeCard(card,left,top){
     //TODO : check visibility and handle hiding cards
-    return drawCardFront(card,left,top);
+    return makeCardFront(card,left,top);
 }
 
-function drawCardFront(card,left,top){
-    return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">${card.value} of ${card.color}</label>`
+function makeCardFront(card,left,top){
+    let cardElem = document.createElement('label');
+    cardElem.setAttribute('id',`Card_${card.id}`);
+    cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
+    cardElem.innerHTML = `${card.value} of ${card.color}`;
+    return cardElem;
+    // return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">${card.value} of ${card.color}</label>`
 }
 
-function drawCardBack(card,left,top){
-    return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">Back</label>`
+function makeCardBack(card,left,top){
+    let cardElem = document.createElement('label');
+    cardElem.setAttribute('id',`Card_${card.id}`);
+    cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
+    cardElem.innerHTML = `Back`;
+    return cardElem;
+    // return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">Back</label>`
 }
 
-function drawCreature(creature, left, top){
-    let creatureContent = '';
-    const cardWidthWithBorder = CARDWIDTH+2*CARDBORDER;
-    const cardHeightWithBorder = CARDHEIGHT+2*CARDBORDER;
+function makeCreature(creature, left, top){
+    let creatureElem = document.createElement('div');
+    creatureElem.setAttribute('id', `Creature_${creature.id}`);
+    creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px`;
+    
     if (creature.spirit !== undefined) {
-        creatureContent += drawCardBack(creature.spirit,cardWidthWithBorder,0);
+        creatureElem.appendChild(makeCardBack(creature.spirit,CARDWIDTHWITHBORDER,0));
     }
     if (creature.heart !== undefined) {
-        creatureContent += drawCardBack(creature.heart,0,cardHeightWithBorder);
+        creatureElem.appendChild(makeCardBack(creature.heart,0,CARDHEIGHTWITHBORDER));
     }
     if (creature.head !== undefined) {
-        creatureContent += drawCardFront(creature.head,cardWidthWithBorder,cardHeightWithBorder);
+        creatureElem.appendChild(makeCardFront(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
     }
     if (creature.weapon !== undefined) {
-        creatureContent += drawCardBack(creature.weapon,2*cardWidthWithBorder,cardHeightWithBorder);
+        creatureElem.appendChild(makeCardBack(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
     }
     if (creature.power !== undefined) {
-        creatureContent += drawCardBack(creature.power,cardWidthWithBorder,2*cardHeightWithBorder);
+        creatureElem.appendChild(makeCardBack(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER));
     }
-    return `<div id="Creature_${creature.id}" style="height: ${3*(cardHeightWithBorder)}px; width: ${3*(cardWidthWithBorder)}px; position: absolute; top: ${top}px; left: ${left}px">${creatureContent}</div>`
+
+    // let creatureContent = '';
+    // if (creature.spirit !== undefined) {
+    //     creatureContent += makeCardBack(creature.spirit,CARDWIDTHWITHBORDER,0);
+    // }
+    // if (creature.heart !== undefined) {
+    //     creatureContent += makeCardBack(creature.heart,0,CARDHEIGHTWITHBORDER);
+    // }
+    // if (creature.head !== undefined) {
+    //     creatureContent += makeCardFront(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
+    // }
+    // if (creature.weapon !== undefined) {
+    //     creatureContent += makeCardBack(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
+    // }
+    // if (creature.power !== undefined) {
+    //     creatureContent += makeCardBack(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER);
+    // }
+    // return `<div id="Creature_${creature.id}" style="height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px">${creatureContent}</div>`
 }
 
 // function moveCard(id,left,top){

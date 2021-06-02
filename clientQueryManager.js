@@ -109,6 +109,14 @@ export class QueryManager{
         });
     }
 
+    static playRequest(move){
+        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'play', name: window.STARNAME, move}),(res)=>{
+            if(res.status !== "OK"){
+                console.error(`server-side play error : ${res.error}`)
+            }
+        });
+    }
+
     static requestUpdate(){
         if(!window.skipUpdateRequest){
             this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'update', name: window.STARNAME, game: window.GAMENAME}),(res)=>{
