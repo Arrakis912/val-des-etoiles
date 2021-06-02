@@ -1,7 +1,7 @@
 import { QueryManager } from "./clientQueryManager.js"
 
-const CARDHEIGHT = 50;
-const CARDWIDTH = 50;
+const CARDHEIGHT = 40;
+const CARDWIDTH = 40;
 const CARDBORDER = 2;
 const CARDHEIGHTWITHBORDER = CARDHEIGHT + (2*CARDBORDER);
 const CARDWIDTHWITHBORDER = CARDWIDTH + (2*CARDBORDER);
@@ -58,8 +58,6 @@ function updateUI(){
     gameBoard.appendChild(makeSource(gameStatus.source.length));
     gameBoard.appendChild(makeRiver(gameStatus));
     gameBoard.appendChild(makeField(gameStatus, playerIndex, false));
-    // let gameBoard = `${drawInfoLine(gameStatus,activePlayerName,playerIsActive)}${drawButtons(gameStatus, playerIndex, playerIsActive)}${drawField(gameStatus, opIndex, true)}${drawSource(gameStatus.source.length)}${drawRiver(gameStatus)}${drawField(gameStatus, playerIndex, false)}`;
-    // document.getElementById("gameBoard").innerHTML = gameBoard;
     window.PREVIOUSGAMESTATUS = gameStatus;
     if(playerIsActive){
         //Stop requesting update as we are the one the game is waiting
@@ -73,7 +71,6 @@ function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: 0px; left: 0px`;
     line.innerHTML = `active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}`;
     return line;
-    // return `<label id="GameInfo" style="height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: 0px; left: 0px">active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}</label>`
 }
 
 function makeButtons(gameStatus, playerIndex, playerIsActive){
@@ -86,9 +83,6 @@ function makeButtons(gameStatus, playerIndex, playerIsActive){
     skipPhaseButton.addEventListener('click', clickGameButtonSkip);
     line.appendChild(skipPhaseButton);
     return line;
-    // let buttons = "";
-    // buttons += `<button id="skipPhaseButton" onclick="clickGameButtonSkip()">Finir Phase</button>`;
-    // return `<div id="GameButtons" style="height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px">${buttons}</div>`
 }
 
 function clickGameButtonSkip(){
@@ -101,7 +95,6 @@ function makeSource(cardsLeft){
     source.innerHTML = `${cardsLeft}`;
     source.style=`height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px`;
     return source;
-    // return `<label id="Source" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px">${cardsLeft}</label>`
 }
 
 function makeRiver(gameStatus){
@@ -114,13 +107,6 @@ function makeRiver(gameStatus){
         offset += CARDWIDTH;
     });
     return river;
-    // let river = "";
-    // let riverFlow = 0;
-    // gameStatus.river.forEach(card => {
-    //     river += makeCardFront(card, riverFlow, 0);
-    //     riverFlow += CARDWIDTH;
-    // });
-    // return `<div id="River" style="position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px">${river}</div>`
 }
 
 function makeField(gameStatus, playerId, isOpponent){
@@ -130,7 +116,6 @@ function makeField(gameStatus, playerId, isOpponent){
     field.appendChild(makePlayerHand(gameStatus, playerId,isOpponent));
     field.appendChild(makePlayerCreatures(gameStatus, playerId,isOpponent));
     return field;
-    // return `<div id="${isOpponent?"Opponent":"Player"}" style = "height:${4*CARDHEIGHTWITHBORDER}px; position: absolute; top: ${(isOpponent?0:SOURCEPOSITION[0]) + CARDHEIGHTWITHBORDER}px; left: ${0}px">${drawPlayerHand(gameStatus, playerId,isOpponent)}${drawPlayerCreatures(gameStatus, playerId,isOpponent)}</div>`
 }
 
 function makePlayerHand(gameStatus, playerId, isOp){
@@ -143,13 +128,6 @@ function makePlayerHand(gameStatus, playerId, isOp){
         offset += CARDWIDTH;
     });
     return hand;
-    // let hand = "";
-    // let offset = 0;
-    // gameStatus.players[playerId].hand.forEach(card => {
-    //     hand += isOp?(makeCardBack(card, offset, 0)):(makeCardFront(card, offset, 0));
-    //     offset += CARDWIDTH;
-    // });
-    // return `<div id="${isOp?"Op":""}Hand" style="position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px">${hand}</div>`
 }
 
 function makePlayerCreatures(gameStatus, playerId, isOp){
@@ -162,13 +140,6 @@ function makePlayerCreatures(gameStatus, playerId, isOp){
         offset += 3*CARDWIDTHWITHBORDER;
     });
     return terrain;
-    // let terrain = "";
-    // let offset = 0;
-    // gameStatus.players[playerId].creatures.forEach(creature => {
-    //     terrain += drawCreature(creature, offset, 0);
-    //     offset += 3*CARDWIDTHWITHBORDER;
-    // });
-    // return `<div id="${isOp?"Op":""}Creatures" style="position: absolute; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: ${0}px">${terrain}</div>`
 }
 
 function textInstruction(gameStatus){
@@ -207,7 +178,6 @@ function makeCardFront(card,left,top){
     cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
     cardElem.innerHTML = `${card.value} of ${card.color}`;
     return cardElem;
-    // return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">${card.value} of ${card.color}</label>`
 }
 
 function makeCardBack(card,left,top){
@@ -216,7 +186,6 @@ function makeCardBack(card,left,top){
     cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
     cardElem.innerHTML = `Back`;
     return cardElem;
-    // return `<label id="Card_${card.id}" style="height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px">Back</label>`
 }
 
 function makeCreature(creature, left, top){
@@ -239,24 +208,6 @@ function makeCreature(creature, left, top){
     if (creature.power !== undefined) {
         creatureElem.appendChild(makeCardBack(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER));
     }
-
-    // let creatureContent = '';
-    // if (creature.spirit !== undefined) {
-    //     creatureContent += makeCardBack(creature.spirit,CARDWIDTHWITHBORDER,0);
-    // }
-    // if (creature.heart !== undefined) {
-    //     creatureContent += makeCardBack(creature.heart,0,CARDHEIGHTWITHBORDER);
-    // }
-    // if (creature.head !== undefined) {
-    //     creatureContent += makeCardFront(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
-    // }
-    // if (creature.weapon !== undefined) {
-    //     creatureContent += makeCardBack(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
-    // }
-    // if (creature.power !== undefined) {
-    //     creatureContent += makeCardBack(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER);
-    // }
-    // return `<div id="Creature_${creature.id}" style="height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px">${creatureContent}</div>`
 }
 
 // function moveCard(id,left,top){

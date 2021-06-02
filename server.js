@@ -436,12 +436,12 @@ class GameStatus{
                     //draw card
                     this.activePlayerDrawCard(moveDescription.drawFrom);
                     //set active player to next player and restart turn, and unreveal all revealed cards of both
-                    this.activePlayer.unRevealAll();
+                    this.players[this.activePlayer].unRevealAll();
                     this.activePlayer += 1;
                     if (this.activePlayer >= this.players.length) {
                         this.activePlayer = 0;
                     }
-                    this.activePlayer.unRevealAll();
+                    this.players[this.activePlayer].unRevealAll();
                     this.phase = 0;
                 } else {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
@@ -556,6 +556,7 @@ function processQuery(url, method, body){
         case "play": {
             const starName = body.name;
             const star = playerList.find((elem)=>elem.name === starName);
+            const game = gameList.find((elem)=>elem.name === star.game)
             if(undefined === star){
                 returnBody = JSON.stringify({status : "KO", error:"unknown player"});
                 break;
@@ -564,7 +565,7 @@ function processQuery(url, method, body){
                 returnBody = JSON.stringify({status : "KO", error:"player not in game"});
                 break;
             }
-            returnBody = JSON.stringify(star.game.playMove(starName, body.move));
+            returnBody = JSON.stringify(game.playMove(starName, body.move));
             break;
         }
         case undefined:
@@ -612,6 +613,7 @@ function joinGame(gameName, starName){
     const game = gameList.find((elem)=>elem.name===gameName);
     const player = playerList.find((elem)=>elem.name===starName);
     game.addPlayer(player);
+    player.game = gameName;
 }
 
 function exitGame(gameName, starName){

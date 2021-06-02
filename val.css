@@ -4,3 +4,7 @@
 .dying{
     border: 3px solid red;
 }
+label{
+    text-align: center;
+    vertical-align: middle;
+}
