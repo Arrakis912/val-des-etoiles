@@ -10,7 +10,7 @@ class Card{
         this.id = id;
         this.visibility = visibility;
         this.isHead = (this.value === 'J' || this.value === 'Q' || this.value === 'K')? true : false;
-        this.owner = -1;
+        this.attachedTo = 'Source';
     }
     getRawValue(){
         switch (this.value) {
@@ -66,6 +66,9 @@ class Creature{
         } else {
             this.id = this.head.id;
         }
+        ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((card)=>{
+            this.card.attachedTo = this.id;
+        },this)
     }
     useAspect(aspect){
         if(this[aspect]===undefined){
@@ -95,7 +98,6 @@ class Creature{
             else{
                 this.ripCard(color);
                 this.type = "spectre royal";
-                this.owner.ray-= 5;
             }
         }
         else if(card.value === 'K'){
@@ -105,7 +107,6 @@ class Creature{
             else{
                 this.ripCard(color);
                 this.type = "dame noire";
-                this.owner.ray-= 5;
             }
             
         }
@@ -121,7 +122,7 @@ class Creature{
         }, this);
     }
     handleInvalidCardReveal(color){
-        if (this.owner ==="Mercure") {
+        if (this.owner.name === "Mercure") {
             this.owner.ray -= 5;
         }
         else{
@@ -143,6 +144,9 @@ class Creature{
         const previousType = this.type;
         this.buryCard(color);
         this.type = this.computeType();
+        if(this.type === "spectre"){
+            this.owner.ray -=5;
+        }
         if(this.type === undefined){
             if(previousType === "spectre" || previousType === "spectre royal"|| previousType === "dame noire"|| previousType === "damne"){
                 this.owner.ray += 5;
@@ -153,7 +157,7 @@ class Creature{
         }
     }
     buryCard(aspect){
-        this[aspect].owner = 'River';
+        this[aspect].attachedTo = 'River';
         this.game.river.push(this[aspect]);
         this[aspect] = undefined;
     }
@@ -232,9 +236,17 @@ class Creature{
             if(this.weapon == undefined){
                 if(this.power != undefined){
                     if(this.spirit != undefined){
-                        return `damne`;
+                        if(this.owner.name === 'Vulcain' || this.owner.name === 'Pluton' || this.owner.name === 'Neptune' || this.owner.name === 'Uranus' || this.owner.name === 'Saturne' || this.owner.name === 'Jupiter' || this.owner.name === 'Mars' || this.owner.name === 'Venus' || this.owner.name === 'Mercure' || this.owner.name === 'Selenee'){
+                            return `damne`;
+                        } else {
+                            return undefined;
+                        }
                     } else {
-                        return 'ombre';
+                        if(this.game.ruleSet === "Helios"){
+                            return 'ombre';
+                        } else {
+                            return undefined;
+                        }
                     }
                 } else {
                     return undefined;
@@ -279,19 +291,40 @@ class PlayerStatus{
     obtainCard(card){
         this.hand.push(card);
         card.visibility = 'Owner';
-        card.owner = this.name;
+        card.attachedTo = this.name;
     }
     unRevealAll(){
         this.creatures.forEach((creature)=>{
             creature.unRevealAspects();
         })
     }
+    makeCreature(head, heart, weapon, spirit, power){
+        let cardIndexes = {};
+        cardIndexes.head = (head === undefined)?-2:this.hand.findIndex((card)=>card.id === head.id);
+        cardIndexes.heart = (heart === undefined)?-2:this.hand.findIndex((card)=>card.id === heart.id);
+        cardIndexes.weapon = (weapon === undefined)?-2:this.hand.findIndex((card)=>card.id === weapon.id);
+        cardIndexes.spirit = (spirit === undefined)?-2:this.hand.findIndex((card)=>card.id === spirit.id);
+        cardIndexes.power = (power === undefined)?-2:this.hand.findIndex((card)=>card.id === power.id);
+        ['head', 'heart', 'weapon', 'spirit', 'power'].forEach(elem => {
+            if (cardIndexes[elem] === -1) {
+                console.error(`aspect ${elem} not in hand to create creature`)
+                return
+            }
+        }, this);
+        let creature = new Creature(this, this.game, head, heart, weapon, spirit, power);
+        if(creature.type === undefined){
+            //TODO undo changes to cards from the creation (returning them to hand), destroy creature, and return error
+            console.error(`Creating invalid creature`)
+        } else {
+            //TODO remove cards from hand 
+        }
+    }
 }
 
 class GameStatus{
-    constructor(name, ruleset = "default"){
+    constructor(name, ruleSet = "default"){
         this.name = name;
-        this.ruleSet = ruleset;
+        this.ruleSet = ruleSet;
         this.started = false;
         this.players = [];
         this.river = [];
@@ -303,12 +336,15 @@ class GameStatus{
     }
 
     setGameStateToKillingCreature(creature){
-        this.interruptFlow = {"activePlayer" : this.activePlayer, "phase" : phase, "type" : "bury", "creature" : creature};
+        this.interruptFlow = {"activePlayer" : this.activePlayer, type : "bury", phase:this.phase, creature};
+        this.activePlayer = creature.owner;
         this.phase = -2;
     }
 
     getStateVisibleFor(playerName){
-        return this;
+        let visibleState = JSON.parse(JSON.stringify(this));
+        //TODO : mask Hidden info for player
+        return visibleState;
     }
 
     addPlayer(player){
@@ -364,6 +400,10 @@ class GameStatus{
             for (let playerIndex = 0; playerIndex < this.players.length; playerIndex++) {
                 const player = this.players[playerIndex];
                 const drawnCard = this.source.shift();
+                if(this.source.length == 0){
+                    this.sunRise();
+                    return;
+                }
                 drawnCard.visibility = 'Active';
                 player.hand.push(drawnCard);
                 cardGroup.push(drawnCard);
@@ -459,14 +499,27 @@ class GameStatus{
     activePlayerDrawCard(drawFrom){
         switch (drawFrom) {
             case "river":
-                this.players[this.activePlayer].obtainCard(this.river.pop());
+                if(this.river.length == 0){
+                    console.error('tried taking card from empty river');
+                }else{
+                    this.players[this.activePlayer].obtainCard(this.river.pop());
+                }
                 break;
             default:
                 console.log(`drawing card from unrecognised ${drawFrom} area, defaulted to source`)
             case "source":
-                this.players[this.activePlayer].obtainCard(this.source.shift());
+                if(this.source.length <= 1){
+                    this.sunRise();
+                } else {
+                    this.players[this.activePlayer].obtainCard(this.source.shift());
+                }
                 break;
         }
+    }
+
+    sunRise(){
+        this.phase = -2;
+        this.interruptFlow={type:"victory", winner:"Helios"}
     }
 
     log(gameEvent){
@@ -484,7 +537,7 @@ const server = http.createServer((req, res) => {
     req.on('error', (err) => {
         console.error(err);
     }).on('data', (chunk) => {
-        console.log(`received data : ${chunk}`)
+        // console.log(`received data : ${chunk}`)
         bodyParts.push(chunk);
     }).on('end', () => {
         res.setHeader('Content-Type', 'text/plain');
@@ -500,7 +553,7 @@ const server = http.createServer((req, res) => {
         body = Buffer.concat(bodyParts).toString();
         // At this point, we have the headers, method, url and body, and can now
         // do whatever we need to in order to respond to this request.
-        console.log(`client ${url} connected with method : ${method} and body : ${body}`);
+        // console.log(`client ${url} connected with method : ${method} and body : ${body}`);
         [res.statusCode, returnBody] = processQuery(url, method, JSON.parse(body));
         res.end(returnBody);
     });
@@ -527,7 +580,7 @@ function processQuery(url, method, body){
         }
         case "createGame":{
             const starName = body.name;
-            const gameName = body.game || `val de ${starName}`;
+            const gameName = body.game;
             if(gameList.findIndex((elem)=>elem.name===gameName) === -1){
                 game = addGame(gameName);
             }

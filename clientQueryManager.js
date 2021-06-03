@@ -95,6 +95,23 @@ export class QueryManager{
         });
     }
 
+    static makeGameRequest(){
+        if(window.STARNAME === undefined){
+            console.error(`star undefined, can't make game`)
+            return;
+        }
+        const gameName = `val de ${window.STARNAME}`;
+        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'createGame', name: window.STARNAME, game:gameName}),(res)=>{
+            document.getElementById("gameListPage").style.display = 'none';
+            document.getElementById("gameInfo").textContent = `Bienvenu sur le Val, ${window.STARNAME}. Nous attendons votre adversaire.`;
+            document.getElementById("gameBoard").style.display = 'block';
+            console.log('madeGame!');
+            window.GAMENAME = gameName;
+            window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
+            window.skipUpdateRequest = false;
+        });
+    }
+
     static exitGameRequest(){
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'exitGame', name: window.STARNAME, game:window.GAMENAME}),(res)=>{
             clearInterval(window.GAMEUPDATEINTERVAL);

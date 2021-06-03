@@ -19,8 +19,12 @@ function connect(){
     const url = document.getElementById('input_url').value;
     console.log(`client connect function with name ${name} and url ${url}`);
     
-    QueryManager.connectRequest(url, name)
+    QueryManager.connectRequest(url, name);
     window.updateInterval = setInterval(updateUIInterval, 500);
+}
+
+function makeNewGame(){
+    QueryManager.makeGameRequest();
 }
 
 function backToList(){
@@ -33,6 +37,14 @@ function disconnect(){
     QueryManager.disconnectRequest();
     document.getElementById("gameListPage").style.display = 'none';
     document.getElementById("initPage").style.display = 'block';
+}
+
+function clickRiver(){
+
+}
+
+function clickGameButtonSkip(){
+    sendMove({type:"endPhase"});
 }
 
 function sendMove(move){
@@ -76,17 +88,17 @@ function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
 function makeButtons(gameStatus, playerIndex, playerIsActive){
     let line = document.createElement('div');
     line.setAttribute('id','GameButtons');
-    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px`
-    let skipPhaseButton = document.createElement('button');
-    skipPhaseButton.setAttribute('id','skipPhaseButton');
-    skipPhaseButton.innerHTML = 'Finir Phase';
-    skipPhaseButton.addEventListener('click', clickGameButtonSkip);
-    line.appendChild(skipPhaseButton);
+    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px`;
+    if(playerIsActive){
+        if(gameStatus.phase === 0 || gameStatus.phase === 1){
+            let skipPhaseButton = document.createElement('button');
+            skipPhaseButton.setAttribute('id','skipPhaseButton');
+            skipPhaseButton.innerHTML = 'Finir Phase';
+            skipPhaseButton.addEventListener('click', clickGameButtonSkip);
+            line.appendChild(skipPhaseButton);
+        }
+    }
     return line;
-}
-
-function clickGameButtonSkip(){
-    sendMove({type:"endPhase"});
 }
 
 function makeSource(cardsLeft){
@@ -106,6 +118,7 @@ function makeRiver(gameStatus){
         river.appendChild(makeCardFront(card,offset,0));
         offset += CARDWIDTH;
     });
+    river.addEventListener('click', clickRiver);
     return river;
 }
 
@@ -225,5 +238,6 @@ function makeCreature(creature, left, top){
 // }
 
 document.getElementById('connectButton').addEventListener('click', connect);
+document.getElementById('newGameButton').addEventListener('click', makeNewGame);
 document.getElementById('backToListButton').addEventListener('click', backToList);
 document.getElementById('DisconnectButton').addEventListener('click', disconnect);
