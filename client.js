@@ -39,8 +39,26 @@ function disconnect(){
     document.getElementById("initPage").style.display = 'block';
 }
 
+function clickSource(){
+
+}
+
 function clickRiver(){
 
+}
+
+function clickCard(cardId){
+    const cardElem = document.getElementById(`Card_${cardId}`);
+    const root = cardElem.parentElement;
+    const rootName = root.getAttribute('id')
+    if(rootName.startsWith('Op')){
+        console.log(`clicked card ${cardId} in ${rootName} : no effect`);
+    } else if(rootName.startsWith('Creature_')){
+        const terrain = root.parentElement;
+
+    } else if(rootName === 'River'){
+        clickRiver();
+    }
 }
 
 function clickGameButtonSkip(){
@@ -49,7 +67,7 @@ function clickGameButtonSkip(){
 
 function sendMove(move){
     QueryManager.playRequest(move);
-    window.skipUpdateRequest = false;
+    window.playerIsActive = false;
 }
 
 function updateUI(){
@@ -57,7 +75,7 @@ function updateUI(){
     const gameStatus = window.GAMESTATUS;
     const activePlayerName = gameStatus.players[gameStatus.activePlayer].name;
     const playerIndex = gameStatus.players.findIndex((elem)=>elem.name===window.STARNAME);
-    const playerIsActive = (window.STARNAME === activePlayerName);
+    window.playerIsActive = (window.STARNAME === activePlayerName);
     let opIndex = playerIndex + 1;
     if (opIndex >= gameStatus.players.length) {
         opIndex = 0;
@@ -71,10 +89,6 @@ function updateUI(){
     gameBoard.appendChild(makeRiver(gameStatus));
     gameBoard.appendChild(makeField(gameStatus, playerIndex, false));
     window.PREVIOUSGAMESTATUS = gameStatus;
-    if(playerIsActive){
-        //Stop requesting update as we are the one the game is waiting
-        window.skipUpdateRequest = true;
-    }
 }
 
 function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
@@ -133,6 +147,7 @@ function makeSource(cardsLeft){
     source.setAttribute('id', 'Source');
     source.innerHTML = `${cardsLeft}`;
     source.style=`height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px`;
+    source.addEventListener('click', clickSource);
     return source;
 }
 
@@ -142,10 +157,9 @@ function makeRiver(gameStatus){
     river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px`;
     let offset = 0;
     gameStatus.river.forEach(card=>{
-        river.appendChild(makeCardFront(card,offset,0));
+        river.appendChild(makeCard(card,offset,0));
         offset += CARDWIDTH;
     });
-    river.addEventListener('click', clickRiver);
     return river;
 }
 
@@ -164,7 +178,7 @@ function makePlayerHand(gameStatus, playerId, isOp){
     hand.style = `position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px`;
     let offset = 0;
     gameStatus.players[playerId].hand.forEach(card => {
-        hand.appendChild(isOp?makeCardBack(card, offset, 0):makeCardFront(card, offset, 0));
+        hand.appendChild(isOp?makeCard(card, offset, 0, false):makeCard(card, offset, 0));
         offset += CARDWIDTH;
     });
     return hand;
@@ -182,24 +196,17 @@ function makePlayerCreatures(gameStatus, playerId, isOp){
     return terrain;
 }
 
-function makeCard(card,left,top){
-    //TODO : check visibility and handle hiding cards
-    return makeCardFront(card,left,top);
-}
-
-function makeCardFront(card,left,top){
+function makeCard(card,left,top, revealed=true){
+    //TODO : check visibility and handle better hiding cards
     let cardElem = document.createElement('label');
     cardElem.setAttribute('id',`Card_${card.id}`);
     cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
-    cardElem.innerHTML = `${card.value} of ${card.color}`;
-    return cardElem;
-}
-
-function makeCardBack(card,left,top){
-    let cardElem = document.createElement('label');
-    cardElem.setAttribute('id',`Card_${card.id}`);
-    cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
-    cardElem.innerHTML = `Back`;
+    cardElem.innerHTML = revealed?`${card.value} of ${card.color}`:'Back';
+    cardElem.addEventListener('click',()=>{
+        if (window.playerIsActive) {
+            clickCard(card.id);
+        }
+    });
     return cardElem;
 }
 
@@ -209,19 +216,19 @@ function makeCreature(creature, left, top){
     creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px`;
     
     if (creature.spirit !== undefined) {
-        creatureElem.appendChild(makeCardBack(creature.spirit,CARDWIDTHWITHBORDER,0));
+        creatureElem.appendChild(makeCard(creature.spirit,CARDWIDTHWITHBORDER,0, false));
     }
     if (creature.heart !== undefined) {
-        creatureElem.appendChild(makeCardBack(creature.heart,0,CARDHEIGHTWITHBORDER));
+        creatureElem.appendChild(makeCard(creature.heart,0,CARDHEIGHTWITHBORDER, false));
     }
     if (creature.head !== undefined) {
-        creatureElem.appendChild(makeCardFront(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
+        creatureElem.appendChild(makeCard(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
     }
     if (creature.weapon !== undefined) {
-        creatureElem.appendChild(makeCardBack(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
+        creatureElem.appendChild(makeCard(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false));
     }
     if (creature.power !== undefined) {
-        creatureElem.appendChild(makeCardBack(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER));
+        creatureElem.appendChild(makeCard(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false));
     }
 }
 

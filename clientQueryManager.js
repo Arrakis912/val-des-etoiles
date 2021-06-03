@@ -91,7 +91,7 @@ export class QueryManager{
             console.log('joinedGame!');
             window.GAMENAME = game;
             window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
-            window.skipUpdateRequest = false;
+            window.playerIsActive = false;
         });
     }
 
@@ -107,8 +107,8 @@ export class QueryManager{
             document.getElementById("gameBoard").style.display = 'block';
             console.log('madeGame!');
             window.GAMENAME = gameName;
+            window.playerIsActive = false;
             window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
-            window.skipUpdateRequest = false;
         });
     }
 
@@ -136,7 +136,7 @@ export class QueryManager{
     }
 
     static requestUpdate(){
-        if(!window.skipUpdateRequest){
+        if(!window.playerIsActive){
             this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'update', name: window.STARNAME, game: window.GAMENAME}),(res)=>{
                 console.log(`got update : ${res}`);
                 if (JSON.stringify(window.GAMESTATUS) !== res) {
