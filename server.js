@@ -408,7 +408,7 @@ class GameStatus{
                 cardGroup.push(drawnCard);
             }
             let cardValues = cardGroup.map((card)=>card.getRawValue());
-            let sorted = [...cardValues].sort((a,b)=>a-b);
+            let sorted = [...cardValues].sort((a,b)=>b-a);
             foundFirstPlayer = (sorted[0] != sorted[1]);
             if (foundFirstPlayer) {
                 this.activePlayer = cardValues.findIndex((value) => value === sorted[0]);
@@ -527,7 +527,7 @@ class GameStatus{
         }
         this.interruptFlow=interuptionObject
     }
-    
+
     unInteruptFlow(){
         const previousInt = this.interruptFlow.previousInterruption;
         this.phase = this.interruptFlow.phase;
