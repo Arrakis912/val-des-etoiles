@@ -223,19 +223,29 @@ function makeCreature(creature, left, top){
     creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px`;
     
     if (creature.spirit !== undefined) {
-        creatureElem.appendChild(makeCard(creature.spirit,CARDWIDTHWITHBORDER,0, false));
+        const spiritCard = makeCard(creature.spirit,CARDWIDTHWITHBORDER,0, false);
+        spiritCard.classList.add("spirit");
+        creatureElem.appendChild(spiritCard);
     }
     if (creature.heart !== undefined) {
-        creatureElem.appendChild(makeCard(creature.heart,0,CARDHEIGHTWITHBORDER, false));
+        const heartCard = makeCard(creature.heart,0,CARDHEIGHTWITHBORDER, false);
+        heartCard.classList.add("heart");
+        creatureElem.appendChild(heartCard);
     }
     if (creature.head !== undefined) {
-        creatureElem.appendChild(makeCard(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER));
+        const headCard = makeCard(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
+        headCard.classList.add("head");
+        creatureElem.appendChild(headCard);
     }
     if (creature.weapon !== undefined) {
-        creatureElem.appendChild(makeCard(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false));
+        const weaponCard = makeCard(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false);
+        weaponCard.classList.add("weapon");
+        creatureElem.appendChild(weaponCard);
     }
     if (creature.power !== undefined) {
-        creatureElem.appendChild(makeCard(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false));
+        const powerCard = makeCard(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
+        powerCard.classList.add("power")
+        creatureElem.appendChild(powerCard);
     }
 }
 
