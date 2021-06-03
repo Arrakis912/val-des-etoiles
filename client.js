@@ -101,6 +101,33 @@ function makeButtons(gameStatus, playerIndex, playerIsActive){
     return line;
 }
 
+function textInstruction(gameStatus){
+    switch (gameStatus.phase) {
+        case -2:{
+            if(gameStatus.interruptFlow === undefined){
+                return "ERROR! NO INTERUPTFLOW ELEMENT IN A PHASE -2 GAME STATE !"
+            }
+            const type = gameStatus.interruptFlow.type;
+            if(type === "bury"){
+                return "Enterrement : clicker sur la prochaine carte à envoyer à la rivière."
+            } else if (type === "victory") {
+                return `${(gameStatus.interruptFlow.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interruptFlow.winner+" a gagné")}`
+            } else if (type === "multiAction") {
+                return "Action Multiple : clicker sur la rivière ou la source pour y piocher, ou sur la prochaine carte ciblée pour révéler/attacker (le joker de cendre révèle PUIS attaque)"
+            }
+            return `Tour interrompu : type d'interruption non reconnue ${type}`;
+        }
+        case -1:
+            return "Ce message n'est pas sensé être vu !";
+        case 0:
+            return "Action de l'étoile : créer un être (click : bouton), utiliser une arcane (click : carte)";
+        case 1:
+            return "Actions des êtres : utiliser un être (click : carte utilisée)";
+        default:
+            return "Situation Imprévue, uh oh..."
+    }
+}
+
 function makeSource(cardsLeft){
     let source = document.createElement('label');
     source.setAttribute('id', 'Source');
@@ -153,31 +180,6 @@ function makePlayerCreatures(gameStatus, playerId, isOp){
         offset += 3*CARDWIDTHWITHBORDER;
     });
     return terrain;
-}
-
-function textInstruction(gameStatus){
-    switch (gameStatus.phase) {
-        case -2:{
-            if(gameStatus.interruptFlow === undefined){
-                return "ERROR! NO INTERUPTFLOW ELEMENT IN A PHASE -2 GAME STATE !"
-            }
-            const type = gameStatus.interruptFlow.type;
-            if(type === "bury"){
-                return "Enterrement : clicker sur la prochaine carte à envoyer à la rivière."
-            } else if (type === "multiAction") {
-                return "Action Multiple : clicker sur la rivière ou la source pour y piocher, ou sur la prochaine carte ciblée pour révéler/attacker (le joker de cendre révèle PUIS attaque)"
-            }
-            return `Tour interrompu : type d'interruption non reconnue ${type}`;
-        }
-        case -1:
-            return "starting game phase : should not be accessible here !";
-        case 0:
-            return "Action de l'étoile : créer un être (click : bouton), utiliser une arcane (click : carte), ou sauter la phase (click : bouton)";
-        case 1:
-            return "Actions des êtres : utiliser un être (click : carte utilisée), ou finir le tour (click : bouton)";
-        default:
-            return "Unrecognised Situation, uh oh..."
-    }
 }
 
 function makeCard(card,left,top){

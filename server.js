@@ -336,9 +336,8 @@ class GameStatus{
     }
 
     setGameStateToKillingCreature(creature){
-        this.interruptFlow = {"activePlayer" : this.activePlayer, type : "bury", phase:this.phase, creature};
+        this.interrupt({"activePlayer" : this.activePlayer, type : "bury", phase:this.phase, creature});
         this.activePlayer = creature.owner;
-        this.phase = -2;
     }
 
     getStateVisibleFor(playerName){
@@ -464,8 +463,7 @@ class GameStatus{
                 const aspectToBury = moveDescription.card;
                 this.interruptFlow.creature.buryCard(aspectToBury);
                 if (this.interruptFlow.creature.endOfBurial()) {
-                    this.phase = this.interruptFlow.phase;
-                    this.activePlayer = this.interruptFlow.activePlayer;
+                    this.unInteruptFlow();
                 }
                 break;
             }
@@ -518,8 +516,23 @@ class GameStatus{
     }
 
     sunRise(){
-        this.phase = -2;
-        this.interruptFlow={type:"victory", winner:"Helios"}
+        this.interrupt({type:"victory", winner:"Helios"});
+    }
+
+    interrupt(interuptionObject){
+        if (this.phase = -2) {
+            interuptionObject.previousInterruption = this.interruptFlow;
+        } else {
+            this.phase = -2;
+        }
+        this.interruptFlow=interuptionObject
+    }
+    
+    unInteruptFlow(){
+        const previousInt = this.interruptFlow.previousInterruption;
+        this.phase = this.interruptFlow.phase;
+        this.activePlayer = this.interruptFlow.activePlayer;
+        this.interruptFlow = previousInt;
     }
 
     log(gameEvent){
