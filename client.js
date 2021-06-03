@@ -56,10 +56,11 @@ function clickCard(cardId){
     } else if(rootName === "Hand"){
         console.log(`clicked on card ${cardId} in Hand`);
     } else if(rootName.startsWith('Creature_')){
+        const aspect = cardElem.getAttribute('aspect');
         if (root.parentElement.getAttribute('id').startsWith('Op')) {
-            console.log(`clicked on card ${cardId} in opposing creature ${rootName}`);
+            console.log(`clicked on card ${cardId}, ${aspect} in opposing creature ${rootName}`);
         } else {
-            console.log(`clicked on card ${cardId} in player creature ${rootName}`)
+            console.log(`clicked on card ${cardId}, ${aspect} in player creature ${rootName}`)
         }
     } else if(rootName === 'River'){
         clickRiver();
@@ -224,27 +225,27 @@ function makeCreature(creature, left, top){
     
     if (creature.spirit !== undefined) {
         const spiritCard = makeCard(creature.spirit,CARDWIDTHWITHBORDER,0, false);
-        spiritCard.classList.add("spirit");
+        spiritCard.setAttribute('aspect',"spirit");
         creatureElem.appendChild(spiritCard);
     }
     if (creature.heart !== undefined) {
         const heartCard = makeCard(creature.heart,0,CARDHEIGHTWITHBORDER, false);
-        heartCard.classList.add("heart");
+        heartCard.setAttribute('aspect',"heart");
         creatureElem.appendChild(heartCard);
     }
     if (creature.head !== undefined) {
         const headCard = makeCard(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
-        headCard.classList.add("head");
+        headCard.setAttribute('aspect',"head");
         creatureElem.appendChild(headCard);
     }
     if (creature.weapon !== undefined) {
         const weaponCard = makeCard(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false);
-        weaponCard.classList.add("weapon");
+        weaponCard.setAttribute('aspect',"weapon");
         creatureElem.appendChild(weaponCard);
     }
     if (creature.power !== undefined) {
         const powerCard = makeCard(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
-        powerCard.classList.add("power")
+        powerCard.setAttribute('aspect',"power");
         creatureElem.appendChild(powerCard);
     }
 }
