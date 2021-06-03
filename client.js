@@ -40,11 +40,11 @@ function disconnect(){
 }
 
 function clickSource(){
-
+    console.log('clicked source')
 }
 
 function clickRiver(){
-
+    console.log('clicked river')
 }
 
 function clickCard(cardId){
@@ -53,11 +53,18 @@ function clickCard(cardId){
     const rootName = root.getAttribute('id')
     if(rootName.startsWith('Op')){
         console.log(`clicked card ${cardId} in ${rootName} : no effect`);
+    } else if(rootName === "Hand"){
+        console.log(`clicked on card ${cardId} in Hand`);
     } else if(rootName.startsWith('Creature_')){
-        const terrain = root.parentElement;
-
+        if (root.parentElement.getAttribute('id').startsWith('Op')) {
+            console.log(`clicked on card ${cardId} in opposing creature ${rootName}`);
+        } else {
+            console.log(`clicked on card ${cardId} in player creature ${rootName}`)
+        }
     } else if(rootName === 'River'){
         clickRiver();
+    } else {
+        console.error(`unknown root ${rootName} for clicked card ${cardId}`)
     }
 }
 
