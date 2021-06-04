@@ -55,13 +55,21 @@ function clickCard(cardId){
         console.log(`clicked card ${cardId} in ${rootName} : no effect`);
     } else if(rootName === "Hand"){
         console.log(`clicked on card ${cardId} in Hand`);
+        if(window.GAMESTATUS.phase != 0){
+            console.log('cant play card from hand outside of star phase')
+        } else {
+            if(window.isCreatingCreature || window.isEducating){
+                if(window.selectedCard !== undefined){
+                    document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
+                }
+                cardElem.classList.add('selected');
+                window.selectedCard = cardId;
+            }
+        }
     } else if(rootName.startsWith('Creature_')){
         const aspect = cardElem.getAttribute('aspect');
-        if (root.parentElement.getAttribute('id').startsWith('Op')) {
-            console.log(`clicked on card ${cardId}, ${aspect} in opposing creature ${rootName}`);
-        } else {
-            console.log(`clicked on card ${cardId}, ${aspect} in player creature ${rootName}`)
-        }
+        const isOp = root.parentElement.getAttribute('id').startsWith('Op');
+        console.log(`clicked on card ${cardId}, ${aspect} in ${isOp?'opposing':'player'} creature ${rootName}`);
     } else if(rootName === 'River'){
         clickRiver();
     } else {
@@ -73,9 +81,22 @@ function clickGameButtonSkip(){
     sendMove({type:"endPhase"});
 }
 
+function clickCreateCreatureButton(){
+    if(!window.isCreatingCreature){
+        let versant = document.getElementById('Versant');
+        versant.appendChild(makeCreatureSlot());
+        window.isCreatingCreature = true;
+    }
+}
+
+function clickEducateButton(){
+
+}
+
 function sendMove(move){
     QueryManager.playRequest(move);
     window.playerIsActive = false;
+    window.PREVIOUSGAMESTATUS = undefined;
 }
 
 function updateUI(){
@@ -117,7 +138,22 @@ function makeButtons(gameStatus, playerIndex, playerIsActive){
             skipPhaseButton.setAttribute('id','skipPhaseButton');
             skipPhaseButton.innerHTML = 'Finir Phase';
             skipPhaseButton.addEventListener('click', clickGameButtonSkip);
+            skipPhaseButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${0}px`;
             line.appendChild(skipPhaseButton);
+        }
+        if(gameStatus.phase === 0){
+            let createCreatureButton = document.createElement('button');
+            createCreatureButton.setAttribute('id','createCreatureButton');
+            createCreatureButton.innerHTML = 'Engendrer';
+            createCreatureButton.addEventListener('click', clickCreateCreatureButton);
+            createCreatureButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*3}px`;
+            line.appendChild(createCreatureButton);
+            let educateButton = document.createElement('button');
+            educateButton.setAttribute('id','educateButton');
+            educateButton.innerHTML = 'Eduquer';
+            educateButton.addEventListener('click', clickEducateButton);
+            educateButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*6}px`;
+            line.appendChild(educateButton);
         }
     }
     return line;
@@ -165,7 +201,7 @@ function makeRiver(gameStatus){
     river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px`;
     let offset = 0;
     gameStatus.river.forEach(card=>{
-        river.appendChild(makeCard(card,offset,0));
+        river.appendChild(makeCard(card));
         offset += CARDWIDTH;
     });
     return river;
@@ -183,32 +219,28 @@ function makeField(gameStatus, playerId, isOpponent){
 function makePlayerHand(gameStatus, playerId, isOp){
     let hand = document.createElement('div');
     hand.setAttribute('id', `${isOp?"Op":""}Hand`);
-    hand.style = `position: absolute; ${isOp?"top":"bottom"}: ${0}px; left: ${0}px`;
-    let offset = 0;
+    hand.style = `position: absolute; ${isOp?"top":"bottom"}: 0px; left: 0px; display: flex;`;
     gameStatus.players[playerId].hand.forEach(card => {
-        hand.appendChild(isOp?makeCard(card, offset, 0, false):makeCard(card, offset, 0));
-        offset += CARDWIDTH;
+        hand.appendChild(makeCard(card, !isOp));
     });
     return hand;
 }
 
 function makePlayerCreatures(gameStatus, playerId, isOp){
-    let terrain = document.createElement('div');
-    terrain.setAttribute('id', `${isOp?"Op":""}Creatures`);
-    terrain.style = `position: absolute; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: ${0}px`
-    let offset = 0;
+    let versant = document.createElement('div');
+    versant.setAttribute('id', `${isOp?"Op":""}Versant`);
+    versant.style = `position: absolute; height:${3*CARDHEIGHTWITHBORDER}px; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: 0px; display: flex;`
     gameStatus.players[playerId].creatures.forEach(creature => {
-        terrain.appendChild(makeCreature(creature, offset, 0));
-        offset += 3*CARDWIDTHWITHBORDER;
+        versant.appendChild(makeCreature(creature));
     });
-    return terrain;
+    return versant;
 }
 
-function makeCard(card,left,top, revealed=true){
+function makeCard(card,revealed=true){
     //TODO : check visibility and handle better hiding cards
     let cardElem = document.createElement('label');
     cardElem.setAttribute('id',`Card_${card.id}`);
-    cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
+    cardElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black;`;
     cardElem.innerHTML = revealed?`${card.value} of ${card.color}`:'Back';
     cardElem.addEventListener('click',()=>{
         if (window.playerIsActive) {
@@ -218,36 +250,118 @@ function makeCard(card,left,top, revealed=true){
     return cardElem;
 }
 
-function makeCreature(creature, left, top){
+function makeCreature(creature){
     let creatureElem = document.createElement('div');
     creatureElem.setAttribute('id', `Creature_${creature.id}`);
-    creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: absolute; top: ${top}px; left: ${left}px`;
+    creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: relative; top: 0px; left: 0px`;
     
     if (creature.spirit !== undefined) {
-        const spiritCard = makeCard(creature.spirit,CARDWIDTHWITHBORDER,0, false);
+        const spiritCard = makeCard(creature.spirit, false);
+        spiritCard.style.position = 'absolute';
+        spiritCard.style.left = `${CARDWIDTHWITHBORDER}px`;
+        spiritCard.style.top = `${0}px`;
         spiritCard.setAttribute('aspect',"spirit");
         creatureElem.appendChild(spiritCard);
     }
     if (creature.heart !== undefined) {
-        const heartCard = makeCard(creature.heart,0,CARDHEIGHTWITHBORDER, false);
+        const heartCard = makeCard(creature.heart, false);
+        heartCard.style.position = 'absolute';
+        heartCard.style.left = `${0}px`;
+        heartCard.style.top = `${CARDHEIGHTWITHBORDER}px`;
         heartCard.setAttribute('aspect',"heart");
         creatureElem.appendChild(heartCard);
     }
     if (creature.head !== undefined) {
-        const headCard = makeCard(creature.head,CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
+        const headCard = makeCard(creature.head);
+        headCard.style.position = 'absolute';
+        headCard.style.left = `${CARDWIDTHWITHBORDER}px`;
+        headCard.style.top = `${CARDHEIGHTWITHBORDER}px`;
         headCard.setAttribute('aspect',"head");
         creatureElem.appendChild(headCard);
     }
     if (creature.weapon !== undefined) {
-        const weaponCard = makeCard(creature.weapon,2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false);
+        const weaponCard = makeCard(creature.weapon, false);
+        weaponCard.style.position = 'absolute';
+        weaponCard.style.left = `${2*CARDWIDTHWITHBORDER}px`;
+        weaponCard.style.top = `${CARDHEIGHTWITHBORDER}px`;
         weaponCard.setAttribute('aspect',"weapon");
         creatureElem.appendChild(weaponCard);
     }
     if (creature.power !== undefined) {
-        const powerCard = makeCard(creature.power,CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
+        const powerCard = makeCard(creature.power, false);
+        powerCard.style.position = 'absolute';
+        powerCard.style.left = `${CARDWIDTHWITHBORDER}px`;
+        powerCard.style.top = `${2*CARDHEIGHTWITHBORDER}px`;
         powerCard.setAttribute('aspect',"power");
         creatureElem.appendChild(powerCard);
     }
+    return creatureElem;
+}
+
+function makeCreatureSlot(){
+    let creatureElem = document.createElement('div');
+    creatureElem.setAttribute('id','CreatureCreator');
+    creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: relative; top: 0px; left: 0px`;
+    
+    const spiritSlot = makeSlot(CARDWIDTHWITHBORDER,0, false);
+    creatureElem.appendChild(spiritSlot);
+    const heartSlot = makeSlot(0,CARDHEIGHTWITHBORDER, false);
+    creatureElem.appendChild(heartSlot);
+    const headSlot = makeSlot(CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
+    creatureElem.appendChild(headSlot);
+    const weaponSlot = makeSlot(2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false);
+    creatureElem.appendChild(weaponSlot);
+    const powerSlot = makeSlot(CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
+    creatureElem.appendChild(powerSlot);
+
+    let validateCreatureButton = document.createElement('button');
+    validateCreatureButton.setAttribute('id','validateCreatureButton');
+    validateCreatureButton.innerHTML = 'Engendrer';
+    validateCreatureButton.addEventListener('click', ()=>{
+        window.isCreatingCreature = false;
+        sendMove({
+            type: "makeCreature",
+            cardPositions:{
+                "head":parseInt(headSlot.hasAttribute('card')?headSlot.getAttribute('card'):undefined),
+                "heart":parseInt(heartSlot.hasAttribute('card')?heartSlot.getAttribute('card'):undefined),
+                "weapon":parseInt(weaponSlot.hasAttribute('card')?weaponSlot.getAttribute('card'):undefined),
+                "spirit":parseInt(spiritSlot.hasAttribute('card')?spiritSlot.getAttribute('card'):undefined),
+                "power":parseInt(powerSlot.hasAttribute('card')?powerSlot.getAttribute('card'):undefined)
+            }
+        });
+    });
+    validateCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: ${2*CARDWIDTHWITHBORDER}px`;
+    creatureElem.appendChild(validateCreatureButton);
+
+    let cancelCreatureButton = document.createElement('button');
+    cancelCreatureButton.setAttribute('id','cancelCreatureButton');
+    cancelCreatureButton.innerHTML = 'Annuler';
+    cancelCreatureButton.addEventListener('click', ()=>{
+        window.isCreatingCreature = false;
+        creatureElem.remove();
+    });
+    cancelCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: 0px`;
+    creatureElem.appendChild(cancelCreatureButton);
+
+    return creatureElem;
+}
+
+function makeSlot(left,top){
+    //TODO : check visibility and handle better hiding cards
+    let slotElem = document.createElement('label');
+    slotElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
+    slotElem.innerHTML = 'Slot';
+    slotElem.addEventListener('click',()=>{
+        console.log(`clicked slot ${slotElem.getAttribute('aspect')}`);
+        if(window.selectedCard !== undefined){
+            const cardElem = document.getElementById(`Card_${window.selectedCard}`);
+            slotElem.innerHTML = cardElem.innerHTML;
+            slotElem.setAttribute('card',`${window.selectedCard}`);
+            cardElem.classList.remove('selected');
+            window.selectedCard = undefined;
+        }
+    });
+    return slotElem;
 }
 
 // function moveCard(id,left,top){

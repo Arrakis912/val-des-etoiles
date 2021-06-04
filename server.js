@@ -48,34 +48,82 @@ function makeSource(){
 }
 
 class Creature{
-    constructor(owner, game, head, heart, weapon, spirit, power){
+    constructor(owner, game, cards){
         this.owner = owner;
         this.game = game;
-        this.head = head;
-        this.heart = heart;
-        this.weapon = weapon;
-        this.spirit = spirit;
-        this.power = power;
+        this.head = cards.head;
+        this.heart = cards.heart;
+        this.weapon = cards.weapon;
+        this.spirit = cards.spirit;
+        this.power = cards.power;
         this.type = this.computeType();
         this.resting = false;
         this.usedAspect = undefined;
         this.damage = {heart:0, power:0};
         if(this.head === undefined){
-            this.id = -1
+            this.id = -1;
             console.log("error, creating creature with undefined head")
         } else {
             this.id = this.head.id;
         }
-        ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((card)=>{
-            this.card.attachedTo = this.id;
-        },this)
+        if(this.type === undefined){
+            this.id = -1;
+            console.log("error, creating creature with undefined type")
+        } else {
+            ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((card)=>{
+                if(this[card]!==undefined){
+                    this[card].attachedTo = this.id;
+                }
+            },this)
+        }
     }
-    useAspect(aspect){
+    getOwner(){
+        playerList.find((player)=>player.name===this.owner);
+    }
+    getGame(){
+        gameList.find((game)=>game.name===this.game)
+    }
+    useAspect(aspect, target){
+        let initialyHadCard = (this[aspect] !== undefined);
+        if(initialyHadCard){
+            this.resting = true;
+        } else {
+            console.log(`tried using undefined aspect of creature ${this.id}`);
+        }
+        this.revealCard(aspect);
         if(this[aspect]===undefined){
-            console.error(`tried using undefined aspect of creature ${this.id}`);
+            console.log(`aspect was ripped by reveal, stopped trying to use it`);
             return;
         }
-        this.resting = true;
+        if(aspect === 'heart') {
+            const owner = this.getOwner();
+            owner.ray += this.computeValue(aspect);
+        } else if(aspect === 'power'){
+            const game = this.getGame();
+            let actions = ["reveal", "draw"];
+            let isDN = (this.type === "dame noire");
+            if(this.type === "fou"){
+                actions.push("draw");
+                if(game.ruleSet === "Helios"){
+                    actions.push("draw");
+                }
+            }
+            if(this.power.value === 'J' && this.power.color === 'power'){
+                actions.push("draw");
+                const addedDrawNumber = actions.length-2;
+                for (let index = 0; index < addedDrawNumber; index++) {
+                    actions.push("reveal");
+                }
+            }
+            game.interrupt({type:"multiAction",actions, isDN});
+        } else if (aspect === 'spirit'){
+
+        } else if (aspect === 'weapon'){
+
+        } else {
+            console.error(`unrecognised aspect ${aspect}`)
+        }
+        
     }
     rest(){
         this.resting = false;
@@ -83,6 +131,10 @@ class Creature{
     }
     revealCard(color){
         const card = this[color];
+        if(card===undefined){
+            console.log(`tried revealing absent card`);
+            return
+        }
         card.visibility = 'Active';
         if (card.value === 'J') {
             if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
@@ -122,11 +174,12 @@ class Creature{
         }, this);
     }
     handleInvalidCardReveal(color){
-        if (this.owner.name === "Mercure") {
-            this.owner.ray -= 5;
+        const owner = this.getOwner()
+        if (owner.name === "Mercure") {
+            owner.ray -= 5;
         }
         else{
-            console.log("What the fuck, that card should nto be here!")
+            console.error("What the fuck, that card should not be here!")
         }
         this.ripCard(color);
     }
@@ -144,21 +197,22 @@ class Creature{
         const previousType = this.type;
         this.buryCard(color);
         this.type = this.computeType();
+        const owner = this.getOwner();
         if(this.type === "spectre"){
-            this.owner.ray -=5;
+            owner.ray -=5;
         }
         if(this.type === undefined){
             if(previousType === "spectre" || previousType === "spectre royal"|| previousType === "dame noire"|| previousType === "damne"){
-                this.owner.ray += 5;
+                owner.ray += 5;
             }
             if(!this.endOfBurial()){
-                this.game.setGameStateToKillingCreature(this);
+                this.getGame().setGameStateToKillingCreature(this);
             }
         }
     }
     buryCard(aspect){
         this[aspect].attachedTo = 'River';
-        this.game.river.push(this[aspect]);
+        this.getGame().river.push(this[aspect]);
         this[aspect] = undefined;
     }
     endOfBurial(){
@@ -236,13 +290,13 @@ class Creature{
             if(this.weapon == undefined){
                 if(this.power != undefined){
                     if(this.spirit != undefined){
-                        if(this.owner.name === 'Vulcain' || this.owner.name === 'Pluton' || this.owner.name === 'Neptune' || this.owner.name === 'Uranus' || this.owner.name === 'Saturne' || this.owner.name === 'Jupiter' || this.owner.name === 'Mars' || this.owner.name === 'Venus' || this.owner.name === 'Mercure' || this.owner.name === 'Selenee'){
+                        if(this.owner === 'Vulcain' || this.owner === 'Pluton' || this.owner === 'Neptune' || this.owner === 'Uranus' || this.owner === 'Saturne' || this.owner === 'Jupiter' || this.owner === 'Mars' || this.owner === 'Venus' || this.owner === 'Mercure' || this.owner === 'Selenee'){
                             return `damne`;
                         } else {
                             return undefined;
                         }
                     } else {
-                        if(this.game.ruleSet === "Helios"){
+                        if(this.getGame().ruleSet === "Helios"){
                             return 'ombre';
                         } else {
                             return undefined;
@@ -298,26 +352,56 @@ class PlayerStatus{
             creature.unRevealAspects();
         })
     }
-    makeCreature(head, heart, weapon, spirit, power){
+    hasSpectre(){
+        return (-1 !== this.creatures.findIndex((creature)=>{
+            return (creature.type === 'spectre' || creature.type === 'spectre royal' || creature.type === 'dame noire');
+        }))
+    }
+    makeCreature(cardPositions){
         let cardIndexes = {};
-        cardIndexes.head = (head === undefined)?-2:this.hand.findIndex((card)=>card.id === head.id);
-        cardIndexes.heart = (heart === undefined)?-2:this.hand.findIndex((card)=>card.id === heart.id);
-        cardIndexes.weapon = (weapon === undefined)?-2:this.hand.findIndex((card)=>card.id === weapon.id);
-        cardIndexes.spirit = (spirit === undefined)?-2:this.hand.findIndex((card)=>card.id === spirit.id);
-        cardIndexes.power = (power === undefined)?-2:this.hand.findIndex((card)=>card.id === power.id);
+        let cards = {};
         ['head', 'heart', 'weapon', 'spirit', 'power'].forEach(elem => {
+            cardIndexes[elem] = (cardPositions[elem] === null)?-2:this.hand.findIndex((card)=>card.id === cardPositions[elem]);
             if (cardIndexes[elem] === -1) {
-                console.error(`aspect ${elem} not in hand to create creature`)
-                return
+                console.error(`card ${cardPositions[elem]} for aspect ${elem} not in hand to create creature`)
+                return "error, missing card in hand for creature"
             }
+            cards[elem] = this.hand[cardIndexes[elem]]
         }, this);
-        let creature = new Creature(this, this.game, head, heart, weapon, spirit, power);
-        if(creature.type === undefined){
-            //TODO undo changes to cards from the creation (returning them to hand), destroy creature, and return error
-            console.error(`Creating invalid creature`)
+        let creature = new Creature(this.name, this.game, cards);
+        if(creature.id === -1){
+            console.error(`Creating invalid creature`);
+            return "invalid creature";
         } else {
-            //TODO remove cards from hand 
+            const checkForTypePresence = this.creatures.findIndex((prevCreature)=>{
+                prevCreature.type === creature.type;
+            })
+            if(creature.type === "damne"){
+                console.error(`Can't directly create : damne`);
+                return "Can't directly create : damne";
+            }
+            if (checkForTypePresence !== -1) {
+                console.error(`Creating creature of same type as other creature`);
+                return "creature has same type as existing one";
+            } else {
+                this.creatures.push(creature);
+                if(creature.type === "spectre"){
+                    this.ray -= 5;
+                }
+                this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
+                return "ok"
+            }
         }
+    }
+    
+    removeCardsFromHand(indexList){
+        let filteredIndexList = indexList.filter((index)=>{
+            return index>=0;
+        });
+        filteredIndexList.sort((a,b)=>b-a);
+        filteredIndexList.forEach(biggestIndexToRemove => {
+            this.hand.splice(biggestIndexToRemove,1);
+        });
     }
 }
 
@@ -336,8 +420,8 @@ class GameStatus{
     }
 
     setGameStateToKillingCreature(creature){
-        this.interrupt({"activePlayer" : this.activePlayer, type : "bury", phase:this.phase, creature});
-        this.activePlayer = creature.owner;
+        this.interrupt({type : "bury", "activePlayer" : this.activePlayer, phase:this.phase, creature});
+        this.activePlayer = this.players.findIndex((player)=>player.name === creature.owner);
     }
 
     getStateVisibleFor(playerName){
@@ -442,7 +526,12 @@ class GameStatus{
                 if (this.phase != 0) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
-                this.phase = 1;
+                const returnMessage = this.players[playerId].makeCreature(moveDescription.cardPositions);
+                if(returnMessage === "ok"){
+                    this.phase = 1;
+                } else {
+                    return {status: "KO", error : returnMessage}
+                }
                 break;
             }
             case "CreatureAction":{
@@ -451,9 +540,9 @@ class GameStatus{
                 }
                 const aspect = moveDescription.aspect;
                 const creatureId = moveDescription.creature;
-                const targetId = moveDescription.creature;
+                const target = moveDescription.target;
                 const creature = this.players[playerId].creatures.find((item)=>item.id === creatureId);
-                creature.useAspect(aspect);
+                creature.useAspect(aspect, target);
                 break;
             }
             case "buryCreature":{
@@ -475,10 +564,7 @@ class GameStatus{
                     this.activePlayerDrawCard(moveDescription.drawFrom);
                     //set active player to next player and restart turn, and unreveal all revealed cards of both
                     this.players[this.activePlayer].unRevealAll();
-                    this.activePlayer += 1;
-                    if (this.activePlayer >= this.players.length) {
-                        this.activePlayer = 0;
-                    }
+                    this.activePlayer = (this.activePlayer + 1)%this.players.length;
                     this.players[this.activePlayer].unRevealAll();
                     this.phase = 0;
                 } else {
