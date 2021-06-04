@@ -89,11 +89,12 @@ class Creature{
             this.resting = true;
         } else {
             console.log(`tried using undefined aspect of creature ${this.id}`);
+            return `tried using undefined aspect of creature ${this.id}`;
         }
         this.revealCard(aspect);
         if(this[aspect]===undefined){
             console.log(`aspect was ripped by reveal, stopped trying to use it`);
-            return;
+            return 'ok';
         }
         if(aspect === 'heart') {
             const owner = this.getOwner();
@@ -121,9 +122,11 @@ class Creature{
         } else if (aspect === 'weapon'){
 
         } else {
-            console.error(`unrecognised aspect ${aspect}`)
+            console.error(`unrecognised aspect ${aspect}`);
+            return `unrecognised aspect ${aspect}`
         }
-        
+
+        return 'ok';
     }
     rest(){
         this.resting = false;
@@ -542,7 +545,10 @@ class GameStatus{
                 const creatureId = moveDescription.creature;
                 const target = moveDescription.target;
                 const creature = this.players[playerId].creatures.find((item)=>item.id === creatureId);
-                creature.useAspect(aspect, target);
+                const returnMessage = creature.useAspect(aspect, target);
+                if (returnMessage !== 'ok') {
+                    return {status: "KO", error : returnMessage}
+                }
                 break;
             }
             case "buryCreature":{
