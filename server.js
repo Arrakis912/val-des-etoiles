@@ -58,8 +58,8 @@ class Creature{
         this.power = cards.power;
         this.type = this.computeType();
         this.resting = false;
-        this.usedAspect = undefined;
         this.damage = {heart:0, power:0};
+        this.magicienMarks = 0;
         if(this.head === undefined){
             this.id = -1;
             console.log("error, creating creature with undefined head")
@@ -78,13 +78,14 @@ class Creature{
         }
     }
     getOwner(){
-        playerList.find((player)=>player.name===this.owner);
+        return playerList.find((player)=>player.name===this.owner);
     }
     getGame(){
-        gameList.find((game)=>game.name===this.game)
+        return gameList.find((game)=>game.name===this.game);
     }
     useAspect(aspect, target){
         let initialyHadCard = (this[aspect] !== undefined);
+        const owner = this.getOwner();
         if(initialyHadCard){
             this.resting = true;
         } else {
@@ -97,8 +98,10 @@ class Creature{
             return 'ok';
         }
         if(aspect === 'heart') {
-            const owner = this.getOwner();
-            owner.ray += this.computeValue(aspect);
+            owner.heal(this.computeValue(aspect));
+            if(this.owner === "Venus" || this.owner === "Mercure" || this.owner === "Selene"){
+                owner.heal(1);
+            }
         } else if(aspect === 'power'){
             const game = this.getGame();
             let actions = ["reveal", "draw"];
@@ -118,8 +121,23 @@ class Creature{
             }
             game.interrupt({type:"multiAction",actions, isDN});
         } else if (aspect === 'spirit'){
+            const opponent = owner.getOpponent();
+            if(target === -1){
+                const specterPosition = opponent.hasSpectreAtPosition();
+                if(specterPosition !== -1){
+                    console.log('tried spirit attack on a star with specters, first specter blocked');
+                    const specter = opponent.creatures.find((creature)=>creature.type)
+                    specter.damageColor('power',this.computeValue(aspect));
+                }else{
+                    opponent.damage(this.computeValue(aspect));
+                }
+            } else {
+                const targetCreature = opponent.creatures.find((creature)=> creature.id === target);
 
+                
+            }
         } else if (aspect === 'weapon'){
+            const force = this.computeValue(aspect);
 
         } else {
             console.error(`unrecognised aspect ${aspect}`);
@@ -131,11 +149,16 @@ class Creature{
     rest(){
         this.resting = false;
         this.damage = {heart:0, power:0};
+        this.magicienMarks = 0;
     }
     revealCard(color){
         const card = this[color];
         if(card===undefined){
             console.log(`tried revealing absent card`);
+            return
+        }
+        if(card.visibility === 'Active'){
+            console.log('revealing already revealed card : do nothing');
             return
         }
         card.visibility = 'Active';
@@ -179,7 +202,7 @@ class Creature{
     handleInvalidCardReveal(color){
         const owner = this.getOwner()
         if (owner.name === "Mercure") {
-            owner.ray -= 5;
+            owner.damage(5);
         }
         else{
             console.error("What the fuck, that card should not be here!")
@@ -189,7 +212,7 @@ class Creature{
     damageColor(color,value){
         this.revealCard(color);
 
-        if (this[color] !=undefined){
+        if (this[color] !== undefined){
             this.damage[color] += value;
             if (this.damage[color] > this.computeValue(color)){
                 this.ripCard(color);
@@ -197,19 +220,51 @@ class Creature{
         }
     }
     ripCard(color){
-        const previousType = this.type;
+        if(this[color] === undefined){
+            console.error('cant rip undefined card');
+            return
+        }
+        const previouslySpectralOrDamne = (this.isSpectral() || this.type === "damne");
+        const owner = this.getOwner();
+        if(color === "heart"){
+            if (this.type === "enfant") {
+                owner.getOpponent().damage(5);
+            }
+            if (this.head.color === "heart" && this.heart.value === "J" && this.heart.color === "heart"){
+                owner.getOpponent().damage(5);
+            }
+        }
+        const game = this.getGame();
+        if(color === "power" && this.magicienMarks!=0){
+            if(owner.hasSpectreAtPosition()!= -1){
+                let actions = [];
+                for (let index = 0; index < this.magicienMarks; index++) {
+                    actions.push("draw");
+                    if(game.ruleSet === "Helios"){
+                        actions.push("draw")
+                    }
+                }
+                game.interrupt({type:"multiAction",actions});
+            } else {
+                for (let index = 0; index < this.magicienMarks; index++) {
+                    game.activePlayerDrawCard("source");
+                    if(game.ruleSet === "Helios"){
+                        game.activePlayerDrawCard("source");
+                    }
+                }
+            }
+        }
         this.buryCard(color);
         this.type = this.computeType();
-        const owner = this.getOwner();
         if(this.type === "spectre"){
-            owner.ray -=5;
+            owner.damage(5);
         }
         if(this.type === undefined){
-            if(previousType === "spectre" || previousType === "spectre royal"|| previousType === "dame noire"|| previousType === "damne"){
-                owner.ray += 5;
+            if(previouslySpectralOrDamne){
+                owner.damage(5);
             }
             if(!this.endOfBurial()){
-                this.getGame().setGameStateToKillingCreature(this);
+                game.setGameStateToKillingCreature(this);
             }
         }
     }
@@ -288,12 +343,15 @@ class Creature{
         }
         return baseValue;
     }
+    isSpectral(){
+        return (this.type === "spectre" || this.type === "spectre royal" || this.type === "dame noire");
+    }
     computeType(){
         if (this.heart == undefined){
             if(this.weapon == undefined){
                 if(this.power != undefined){
                     if(this.spirit != undefined){
-                        if(this.owner === 'Vulcain' || this.owner === 'Pluton' || this.owner === 'Neptune' || this.owner === 'Uranus' || this.owner === 'Saturne' || this.owner === 'Jupiter' || this.owner === 'Mars' || this.owner === 'Venus' || this.owner === 'Mercure' || this.owner === 'Selenee'){
+                        if(this.owner === 'Vulcain' || this.owner === 'Pluton' || this.owner === 'Neptune' || this.owner === 'Uranus' || this.owner === 'Saturne' || this.owner === 'Jupiter' || this.owner === 'Mars' || this.owner === 'Venus' || this.owner === 'Mercure' || this.owner === 'Selene'){
                             return `damne`;
                         } else {
                             return undefined;
@@ -355,10 +413,10 @@ class PlayerStatus{
             creature.unRevealAspects();
         })
     }
-    hasSpectre(){
-        return (-1 !== this.creatures.findIndex((creature)=>{
-            return (creature.type === 'spectre' || creature.type === 'spectre royal' || creature.type === 'dame noire');
-        }))
+    hasSpectreAtPosition(){
+        return this.creatures.findIndex((creature)=>{
+            return creature.isSpectral();
+        })
     }
     makeCreature(cardPositions){
         let cardIndexes = {};
@@ -389,7 +447,7 @@ class PlayerStatus{
             } else {
                 this.creatures.push(creature);
                 if(creature.type === "spectre"){
-                    this.ray -= 5;
+                    this.damage(5);
                 }
                 this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
                 return "ok"
@@ -406,6 +464,29 @@ class PlayerStatus{
             this.hand.splice(biggestIndexToRemove,1);
         });
     }
+    getGame(){
+        return gameList.find((gameItem)=>gameItem.name === this.game);
+    }
+    getOpponent(){
+        const game = this.getGame();
+        const index = game.players.findIndex((player)=>player.name === this.name);
+        const opIndex = (index+1)%(game.players.length)
+        return game.players[opIndex];
+    }
+
+    damage(hitValue){
+        this.ray -= hitValue;
+        if (this.ray<=0){
+            this.getGame().interrupt({type:"victory", winner:this.getOpponent().name});
+        }
+    }
+    heal(value){
+        this.ray += value;
+        if(this.ray>=100){
+            this.getGame().interrupt({type:"victory", winner:this.name});
+        }
+    }
+
 }
 
 class GameStatus{
@@ -423,7 +504,7 @@ class GameStatus{
     }
 
     setGameStateToKillingCreature(creature){
-        this.interrupt({type : "bury", "activePlayer" : this.activePlayer, phase:this.phase, creature});
+        this.interrupt({type : "bury", creature});
         this.activePlayer = this.players.findIndex((player)=>player.name === creature.owner);
     }
 
@@ -612,7 +693,9 @@ class GameStatus{
     }
 
     interrupt(interuptionObject){
-        if (this.phase = -2) {
+        this.interuptionObject.phase = this.phase;
+        this.interuptionObject.activePlayer = this.player;
+        if (this.phase == -2) {
             interuptionObject.previousInterruption = this.interruptFlow;
         } else {
             this.phase = -2;
