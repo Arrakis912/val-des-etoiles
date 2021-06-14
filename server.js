@@ -60,6 +60,7 @@ class Creature{
         this.resting = false;
         this.damage = {heart:0, power:0};
         this.magicienMarks = 0;
+        this.butcherMark = false;
         if(this.head === undefined){
             this.id = -1;
             console.log("error, creating creature with undefined head")
@@ -122,76 +123,107 @@ class Creature{
             game.interrupt({type:"multiAction",actions, isDN});
         } else if (aspect === 'spirit'){
             const opponent = owner.getOpponent();
+            const force = this.computeValue(aspect);
+            const specterPosition = opponent.hasSpectreAtPosition();
+            let targetCreature;
             if(target === -1){
-                const specterPosition = opponent.hasSpectreAtPosition();
-                if(specterPosition !== -1){
+                if (specterPosition !== -1){
                     console.log('tried spirit attack on a star with specters, first specter blocked');
-                    const specter = opponent.creatures.find((creature)=>creature.type)
-                    specter.damageColor('power',this.computeValue(aspect));
-                }else{
-                    opponent.damage(this.computeValue(aspect));
+                    targetCreature = opponent.creatures[specterPosition];
+                } else {
+                    opponent.damage(force);
+                    return 'ok'
                 }
             } else {
-                const targetCreature = opponent.creatures.find((creature)=> creature.id === target);
-
-                
+                targetCreature = opponent.creatures.find((creature)=> creature.id === target);
+                if(targetCreature.type !== 'spectre' && specterPosition !== -1){
+                    console.log('tried spirit attack on non-spectre creature of a star with specters, first specter blocked');
+                    targetCreature = opponent.creatures[specterPosition];
+                }
             }
+            if(this.type === "magicien"){
+                targetCreature.magicienMarks += 1;
+            }
+            if(this[aspect].value === "J" && this[aspect].color==="spirit"){
+                targetCreature.magicienMarks += 1;
+            }
+            targetCreature.damageColor('power',force);
         } else if (aspect === 'weapon'){
+            const opponent = owner.getOpponent();
             const force = this.computeValue(aspect);
 
+            const heartPosition = opponent.hasHeartAtPosition();
+            let targetCreature;
+            if(target === -1){
+                if (heartPosition !== -1){
+                    console.log('tried spirit attack on a star with specters, first specter blocked');
+                    targetCreature = opponent.creatures[heartPosition];
+                } else {
+                    opponent.damage(force);
+                    return 'ok'
+                }
+            } else {
+                targetCreature = opponent.creatures.find((creature)=> creature.id === target);
+            }
+            if(this[aspect].value === "J" && this[aspect].color==="weapon"){
+                targetCreature.butcherMark = true;
+            }
+            targetCreature.damageColor('heart',force);
         } else {
             console.error(`unrecognised aspect ${aspect}`);
             return `unrecognised aspect ${aspect}`
         }
-
         return 'ok';
     }
+
     rest(){
         this.resting = false;
         this.damage = {heart:0, power:0};
         this.magicienMarks = 0;
+        this.butcherMark = false;
     }
+
     revealCard(color){
         const card = this[color];
+        let errorState = 'ok';
         if(card===undefined){
             console.log(`tried revealing absent card`);
-            return
+            return 'tried revealing absent card'
         }
         if(card.visibility === 'Active'){
             console.log('revealing already revealed card : do nothing');
-            return
+            return 'ok'
         }
         card.visibility = 'Active';
         if (card.value === 'J') {
             if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
                 if (card.color !== color || this.head.color !== color) {//check Homme Liges
-                    this.handleInvalidCardReveal(color);//if none, bad card
+                    errorState = this.handleInvalidCardReveal(color);//if none, bad card
                 }
             }
-        }
-        else if(card.value === 'Q'){
+        }else if(card.value === 'Q'){
             if(this.head.value !== 'K' || this.head.color !== card.color || color !== "heart"){//check lovers
-                this.handleInvalidCardReveal(color);
+                errorState = this.handleInvalidCardReveal(color);
             }
             else{
-                this.ripCard(color);
+                errorState = this.ripCard(color);
                 this.type = "spectre royal";
             }
-        }
-        else if(card.value === 'K'){
+        }else if(card.value === 'K'){
             if(this.head.value !== 'Q' || this.head.color !== card.color || color !== "heart"){// check lovers
-                this.handleInvalidCardReveal(color);
+                errorState = this.handleInvalidCardReveal(color);
             }
             else{
-                this.ripCard(color);
+                errorState = this.ripCard(color);
                 this.type = "dame noire";
             }
             
+        }else if(card.color != color){
+            errorState = this.handleInvalidCardReveal(color);
         }
-        else if(card.color != color){
-            this.handleInvalidCardReveal(color);
-        }
+        return errorState;
     }
+
     unRevealAspects(){
         ['heart','weapon','power','spirit'].forEach(aspect => {
             if (this[aspect] !== undefined){
@@ -199,30 +231,33 @@ class Creature{
             }
         }, this);
     }
+
     handleInvalidCardReveal(color){
         const owner = this.getOwner()
         if (owner.name === "Mercure") {
             owner.damage(5);
         }
         else{
-            console.error("What the fuck, that card should not be here!")
+            console.error("What the fuck, that card should not be here, cheater!");
         }
-        this.ripCard(color);
+        return this.ripCard(color);
     }
     damageColor(color,value){
-        this.revealCard(color);
+        let errorState = 'ok';
+        errorState = this.revealCard(color);
 
-        if (this[color] !== undefined){
+        if (this[color] !== undefined && errorState === 'ok'){
             this.damage[color] += value;
             if (this.damage[color] > this.computeValue(color)){
-                this.ripCard(color);
+                errorState = this.ripCard(color);
             }
         }
+        return errorState;
     }
     ripCard(color){
         if(this[color] === undefined){
             console.error('cant rip undefined card');
-            return
+            return 'cant rip undefined card';
         }
         const previouslySpectralOrDamne = (this.isSpectral() || this.type === "damne");
         const owner = this.getOwner();
@@ -258,15 +293,22 @@ class Creature{
         this.type = this.computeType();
         if(this.type === "spectre"){
             owner.damage(5);
+            owner.hasSpectre = true;
         }
         if(this.type === undefined){
             if(previouslySpectralOrDamne){
-                owner.damage(5);
+                owner.heal(5);
+                owner.hasSpectre = (owner.hasSpectreAtPosition() !== -1);//Update static hasSpectre because we just lost one, so we might have none, now
+            }
+            if(this.butcherMark){
+                game.players[game.activePlayer].obtainCard(this.head);
+                this.head = undefined;
             }
             if(!this.endOfBurial()){
                 game.setGameStateToKillingCreature(this);
             }
         }
+        return 'ok';
     }
     buryCard(aspect){
         this[aspect].attachedTo = 'River';
@@ -276,7 +318,7 @@ class Creature{
     endOfBurial(){
         let cardsStillHere = [];
         ['head','heart','weapon','power','spirit'].forEach(aspect => {
-            if (this[aspect] === undefined){
+            if (this[aspect] !== undefined){
                 cardsStillHere.push(aspect);
             }
         }, this);
@@ -307,7 +349,7 @@ class Creature{
                 return 0;
             }
         }
-        if(this.nedemoneTokens !== undefined){
+        if(this.nedemoneTokens !== undefined && this.nedemoneTokens[color]!== undefined){
             baseValue+= this.nedemoneTokens[color];
         }
         switch (color) {
@@ -402,6 +444,7 @@ class PlayerStatus{
         this.ray = 0;
         this.hand = [];
         this.creatures = [];
+        this.hasSpectre = false;
     }
     obtainCard(card){
         this.hand.push(card);
@@ -416,6 +459,11 @@ class PlayerStatus{
     hasSpectreAtPosition(){
         return this.creatures.findIndex((creature)=>{
             return creature.isSpectral();
+        })
+    }
+    hasHeartAtPosition(){
+        return this.creatures.findIndex((creature)=>{
+            return creature.heart !== undefined;
         })
     }
     makeCreature(cardPositions){
@@ -448,13 +496,87 @@ class PlayerStatus{
                 this.creatures.push(creature);
                 if(creature.type === "spectre"){
                     this.damage(5);
+                    this.hasSpectre = true;
                 }
                 this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
                 return "ok"
             }
         }
     }
-    
+
+    playArcane(cardId, target){
+        let card = this.hand.find((elem) => elem.id === cardId)
+        if(card === undefined){
+            return `card ${cardId} not found in hand : ${JSON.stringify(this.hand)}`
+        }
+        let errorState = 'ok';
+        switch (card.color) {
+            case "heart":{
+                this.heal(card.getRawValue());
+                break;
+            }
+            case "weapon":{
+                let isOp = target.isOp;
+                if(target.type === "creature"){
+                    let creature = undefined;
+                    if(!isOp){
+                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                    } else {
+                        creature = this.getOpponent.hand.find((elem)=> elem.id === target.creatureId);
+                    }
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    errorState = creature.damageColor(card.getRawValue());
+                } else if(target.type === "star"){
+                    if(!isOp){
+                        return `cannot use weapon on own star`;
+                    }
+                    let opponent = this.getOpponent();
+                    if(opponent.hasHeartAtPosition() !== -1){
+                        return 'cannot attack opponent directly with weapon, creature with heart on field';
+                    }
+                    opponent.damage(card.getRawValue(card.getRawValue()));
+                }else{
+                    return `unable to use weapon on target type ${target.type}`;
+                }
+                break;
+            }
+            case "spirit":{
+                //TODO
+                break;
+            }
+            case "power":{
+                //TODO
+                break;
+            }
+            case "sang":{
+                //TODO
+                break;
+            }
+            case "cendre":{
+                //TODO
+                break;
+            }
+            default:
+                return `card color ${card.color} unrecognised`;
+        }
+        if(errorState === "ok"){
+            card.attachedTo = 'River';
+            this.getGame().river.push(card);
+        }
+        return errorState;
+    }
+
+    educateCreature(cardId, target){
+        let card = this.hand.find((elem) => elem.id === cardId)
+        if(card === undefined){
+            return `card ${cardId} not found in hand : ${JSON.stringify(this.hand)}`
+        }
+        //TODO
+        return 'ok'
+    }
+
     removeCardsFromHand(indexList){
         let filteredIndexList = indexList.filter((index)=>{
             return index>=0;
@@ -604,16 +726,33 @@ class GameStatus{
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
                 this.phase = 1;
+                const returnMessage = this.players[playerId].playArcane(moveDescription.card, moveDescription.target);
+                if(returnMessage !== "ok"){
+                    phase = 0;
+                    return {status: "KO", error : returnMessage}
+                }
+                break;
+            }
+            case "educate":{
+                if (this.phase != 0) {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                }
+                this.phase = 1;
+                const returnMessage = this.players[playerId].educateCreature(moveDescription.card, moveDescription.target);
+                if(returnMessage !== "ok"){
+                    this.phase = 0;
+                    return {status: "KO", error : returnMessage}
+                }
                 break;
             }
             case "makeCreature":{
                 if (this.phase != 0) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
+                this.phase = 1;
                 const returnMessage = this.players[playerId].makeCreature(moveDescription.cardPositions);
-                if(returnMessage === "ok"){
-                    this.phase = 1;
-                } else {
+                if(returnMessage !== "ok"){
+                    this.phase = 0;
                     return {status: "KO", error : returnMessage}
                 }
                 break;
@@ -667,7 +806,7 @@ class GameStatus{
         return {status: "OK"};
     }
 
-    activePlayerDrawCard(drawFrom){
+    activePlayerDrawCard(drawFrom="source"){
         switch (drawFrom) {
             case "river":
                 if(this.river.length == 0){

@@ -40,36 +40,90 @@ function disconnect(){
 }
 
 function clickSource(){
-    console.log('clicked source')
+    console.log('clicked source');
+    switch(window.UIState){
+        case "endingTurn":{
+            sendMove({type:"endPhase", drawFrom : "source"});
+            break;
+        }
+        case "searchTarget":{
+            window.selectedFunction({type:"source"});
+            break;
+        }
+        default:{
+            console.log(`no action for this state ${window.UIState} on source`);
+        }
+    }
 }
 
 function clickRiver(){
-    console.log('clicked river')
+    console.log('clicked river');
+    switch(window.UIState){
+        case "endingTurn":{
+            sendMove({type:"endPhase", drawFrom : "river"});
+            break;
+        }
+        case "searchTarget":{
+            window.selectedFunction({type:"river"});
+            break;
+        }
+        default:{
+            console.log(`no action for this state ${window.UIState} on river`);
+        }
+    }
 }
 
-function clickCard(cardId){
+function clickRay(isOp){
+    console.log(`clicked ${isOp?"rival":"player"}`);
+    if(window.UIState === "searchTarget"){
+        window.selectedFunction({type:"star", isOp});
+    }
+}
+
+function clickCard(cardId, value, color){
     const cardElem = document.getElementById(`Card_${cardId}`);
     const root = cardElem.parentElement;
-    const rootName = root.getAttribute('id')
+    const rootName = root.getAttribute('id');
+    const phase = window.GAMESTATUS.phase;
     if(rootName.startsWith('Op')){
-        console.log(`clicked card ${cardId} in ${rootName} : no effect`);
+        console.log(`clicked card ${cardId} in OpHand : no effect`);
     } else if(rootName === "Hand"){
         console.log(`clicked on card ${cardId} in Hand`);
-        if(window.GAMESTATUS.phase != 0){
+        if(phase != 0){
             console.log('cant play card from hand outside of star phase')
-        } else {
-            if(window.isCreatingCreature || window.isEducating){
-                if(window.selectedCard !== undefined){
-                    document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
+        } else {//Star Phase
+            selectCard(cardElem, cardId);
+            if(window.UIState === "educating"){
+                window.UIState = "searchTarget";
+                window.selectedFunction = (target)=>{
+                    sendMove({type:"educate",card : window.selectedCard, target});
                 }
-                cardElem.classList.add('selected');
-                window.selectedCard = cardId;
+            } else {// Play Card : must select target
+                window.UIState = "searchTarget";
+                window.selectedFunction = (target)=>{
+                    sendMove({type:"useCard",card : window.selectedCard, target});
+                }
             }
         }
     } else if(rootName.startsWith('Creature_')){
+        const creatureId = parseInt(rootName.substring(9));
         const aspect = cardElem.getAttribute('aspect');
         const isOp = root.parentElement.getAttribute('id').startsWith('Op');
         console.log(`clicked on card ${cardId}, ${aspect} in ${isOp?'opposing':'player'} creature ${rootName}`);
+        if(window.UIState === "searchTarget"){
+            window.selectedFunction({type : "creature", isOp, creatureId, aspect})
+        } else if (phase === 1 && !isOp){// Play Creature Aspect : must select target
+            if(window.selectedCard !== undefined){
+                document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
+            }
+            cardElem.classList.add('selected');
+            window.selectedCard = cardId;
+            window.UIState = "searchTarget";
+            window.selectedFunction = (target)=>{
+                sendMove({type:"CreatureAction", aspect : window.attackAspect, creature : window.selectedCreature, target});
+            }
+
+        }
     } else if(rootName === 'River'){
         clickRiver();
     } else {
@@ -77,26 +131,54 @@ function clickCard(cardId){
     }
 }
 
+function selectCard(cardElem, cardId){
+    if(window.selectedCard !== undefined){
+        document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
+    }
+    cardElem.classList.add('selected');
+    window.selectedCard = cardId;
+}
+
 function clickGameButtonSkip(){
-    sendMove({type:"endPhase"});
+    if (phase===1){
+        const game = window.GAMESTATUS;
+        if(!game.players[game.activePlayer].hasSpectre()){
+            sendMove({type:"endPhase"});
+        } else {
+            window.UIState = "endingTurn";
+        }
+    } else {
+        sendMove({type:"endPhase"});
+    }
 }
 
 function clickCreateCreatureButton(){
-    if(!window.isCreatingCreature){
+    if(!(window.UIState === "createCreature")){
         let versant = document.getElementById('Versant');
         versant.appendChild(makeCreatureSlot());
-        window.isCreatingCreature = true;
+        window.UIState = "createCreature";
     }
 }
 
 function clickEducateButton(){
+    window.UIState = "educating";
+}
 
+clickCancelMoveButton(){
+    updateUI();
 }
 
 function sendMove(move){
     QueryManager.playRequest(move);
     window.playerIsActive = false;
     window.PREVIOUSGAMESTATUS = undefined;
+}
+
+function resetMoveVariables(){
+    window.UIState = "none";
+    window.selectedCard = undefined;
+    window.selectedCreature = undefined;
+    window.selectedFunction = undefined;
 }
 
 function updateUI(){
@@ -118,6 +200,7 @@ function updateUI(){
     gameBoard.appendChild(makeRiver(gameStatus));
     gameBoard.appendChild(makeField(gameStatus, playerIndex, false));
     window.PREVIOUSGAMESTATUS = gameStatus;
+    resetMoveVariables()
 }
 
 function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
@@ -155,6 +238,12 @@ function makeButtons(gameStatus, playerIndex, playerIsActive){
             educateButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*6}px`;
             line.appendChild(educateButton);
         }
+        let cancelMoveButton = document.createElement('button');
+        cancelMoveButton.setAttribute('id','cancelMoveButton');
+        cancelMoveButton.innerHTML = 'Annuler';
+        cancelMoveButton.addEventListener('click', clickCancelMoveButton);
+        cancelMoveButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*6}px`;
+        line.appendChild(cancelMoveButton);
     }
     return line;
 }
@@ -220,10 +309,24 @@ function makePlayerHand(gameStatus, playerId, isOp){
     let hand = document.createElement('div');
     hand.setAttribute('id', `${isOp?"Op":""}Hand`);
     hand.style = `position: absolute; ${isOp?"top":"bottom"}: 0px; left: 0px; display: flex;`;
+    hand.appendChild(makeRayLabel(gameStatus, playerId, isOp));
     gameStatus.players[playerId].hand.forEach(card => {
         hand.appendChild(makeCard(card, !isOp));
     });
     return hand;
+}
+
+function makeRayLabel(gameStatus, playerId, isOp){
+    let rayLabel = document.createElement('label');
+    rayLabel.setAttribute('id', `${isOp?"Op":""}RayLabel`);
+    rayLabel.style = `height:${CARDHEIGHTWITHBORDER}px; width:${CARDWIDTHWITHBORDER}px; font-size:large`;
+    rayLabel.innerHTML = `${gameStatus.players[playerId].ray}`;
+    rayLabel.addEventListener('click',()=>{
+        if (window.playerIsActive) {
+            clickRay(isOp);
+        }
+    });
+    return rayLabel;
 }
 
 function makePlayerCreatures(gameStatus, playerId, isOp){
@@ -244,7 +347,7 @@ function makeCard(card,revealed=true){
     cardElem.innerHTML = revealed?`${card.value} of ${card.color}`:'Back';
     cardElem.addEventListener('click',()=>{
         if (window.playerIsActive) {
-            clickCard(card.id);
+            clickCard(card.id, card.value, card.color);
         }
     });
     return cardElem;
@@ -318,7 +421,7 @@ function makeCreatureSlot(){
     validateCreatureButton.setAttribute('id','validateCreatureButton');
     validateCreatureButton.innerHTML = 'Engendrer';
     validateCreatureButton.addEventListener('click', ()=>{
-        window.isCreatingCreature = false;
+        window.UIState = "none";
         sendMove({
             type: "makeCreature",
             cardPositions:{
@@ -337,7 +440,7 @@ function makeCreatureSlot(){
     cancelCreatureButton.setAttribute('id','cancelCreatureButton');
     cancelCreatureButton.innerHTML = 'Annuler';
     cancelCreatureButton.addEventListener('click', ()=>{
-        window.isCreatingCreature = false;
+        window.UIState = "none";
         creatureElem.remove();
     });
     cancelCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: 0px`;
