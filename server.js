@@ -70,12 +70,6 @@ class Creature{
         if(this.type === undefined){
             this.id = -1;
             console.log("error, creating creature with undefined type")
-        } else {
-            ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((card)=>{
-                if(this[card]!==undefined){
-                    this[card].attachedTo = this.id;
-                }
-            },this)
         }
     }
     getOwner(){
@@ -98,82 +92,124 @@ class Creature{
             console.log(`aspect was ripped by reveal, stopped trying to use it`);
             return 'ok';
         }
-        if(aspect === 'heart') {
-            owner.heal(this.computeValue(aspect));
-            if(this.owner === "Venus" || this.owner === "Mercure" || this.owner === "Selene"){
-                owner.heal(1);
+        let errorState = 'ok';
+        switch (aspect) {
+            case "heart":{
+                owner.heal(this.computeValue(aspect));
+                if(this.owner === "Venus" || this.owner === "Mercure" || this.owner === "Selene"){
+                    owner.heal(1);
+                }
+                break;
             }
-        } else if(aspect === 'power'){
-            const game = this.getGame();
-            let actions = ["reveal", "draw"];
-            let isDN = (this.type === "dame noire");
-            if(this.type === "fou"){
-                actions.push("draw");
-                if(game.ruleSet === "Helios"){
+            case "weapon":{
+                let isOp = target.isOp;
+                if(target.type === "creature"){
+                    let creature = undefined;
+                    if(!isOp){
+                        creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
+                    } else {
+                        creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+                    }
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    if(this[aspect].value === "J" && this[aspect].color==="weapon"){
+                        creature.butcherMark = true;
+                    }
+                    errorState = creature.damageColor("heart",this.computeValue(aspect));
+                } else if(target.type === "star"){
+                    if(!isOp){
+                        return `cannot use weapon on own star`;
+                    }
+                    let opponent = owner.getOpponent();
+                    if(opponent.hasHeartAtPosition() !== -1){
+                        return 'cannot attack opponent directly with weapon, creature with heart on field';
+                    }
+                    opponent.damage(this.computeValue(aspect));
+                }else{
+                    return `unable to use weapon on target type ${target.type}`;
+                }
+                break;
+            }
+            case "spirit":{
+                if(!target.isOp){
+                    return `cannot use spirit on own star or creatures`;
+                }
+                if(target.type === "creature"){
+                    let creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    if(this.type === "magicien"){
+                        creature.magicienMarks += 1;
+                    }
+                    if(this[aspect].value === "J" && this[aspect].color==="spirit"){
+                        creature.magicienMarks += 1;
+                    }
+                    errorState = creature.damageColor("power",this.computeValue(aspect));
+                } else if(target.type === "star"){
+                    let opponent = owner.getOpponent();
+                    if(opponent.hasSpectre){
+                        return 'cannot attack opponent directly with spirit : spectre on field';
+                    }
+                    opponent.damage(this.computeValue(aspect));
+                }else{
+                    return `unable to use spirit on target type ${target.type}`;
+                }
+                break;
+            }
+            case "power":{
+                const game = this.getGame();
+                let isDN = (this.type === "dame noire");
+                let actions = ["draw"];
+                if(this.type === "fou"){
                     actions.push("draw");
+                    if(game.ruleSet === "Helios"){
+                        actions.push("draw");
+                    }
                 }
-            }
-            if(this.power.value === 'J' && this.power.color === 'power'){
-                actions.push("draw");
-                const addedDrawNumber = actions.length-2;
-                for (let index = 0; index < addedDrawNumber; index++) {
-                    actions.push("reveal");
+                actions.push("reveal");
+                if(this.power.value === 'J' && this.power.color === 'power'){
+                    actions.push("draw");
+                    const addedDrawNumber = actions.length-2;
+                    for (let index = 0; index < addedDrawNumber; index++) {
+                        actions.push("reveal");
+                    }
                 }
-            }
-            game.interrupt({type:"multiAction",actions, isDN});
-        } else if (aspect === 'spirit'){
-            const opponent = owner.getOpponent();
-            const force = this.computeValue(aspect);
-            const specterPosition = opponent.hasSpectreAtPosition();
-            let targetCreature;
-            if(target === -1){
-                if (specterPosition !== -1){
-                    console.log('tried spirit attack on a star with specters, first specter blocked');
-                    targetCreature = opponent.creatures[specterPosition];
-                } else {
-                    opponent.damage(force);
-                    return 'ok'
+                switch (target.type) {
+                    case "river":
+                    case "source":{
+                        game.activePlayerDrawCard(target.type);
+                        if(isDN && target.type === "river"){
+                            game.activePlayerDrawCard(target.type);
+                        }
+                        actions.shift();
+                        break;
+                    }
+                    case "creature":{
+                        let creature = undefined;
+                        if(!isOp){
+                            creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
+                        } else {
+                            creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+                        }
+                        if(creature === undefined){
+                            return 'unable to find target creature'
+                        }
+                        errorState = creature.revealCard(target.aspect);
+                        actions.pop();
+                        break;
+                    }
+                    default:
+                        return `unrecognised target type ${target.type}`
                 }
-            } else {
-                targetCreature = opponent.creatures.find((creature)=> creature.id === target);
-                if(targetCreature.type !== 'spectre' && specterPosition !== -1){
-                    console.log('tried spirit attack on non-spectre creature of a star with specters, first specter blocked');
-                    targetCreature = opponent.creatures[specterPosition];
-                }
+                game.interrupt({type:"multiAction",actions, isDN});
+                break;
             }
-            if(this.type === "magicien"){
-                targetCreature.magicienMarks += 1;
-            }
-            if(this[aspect].value === "J" && this[aspect].color==="spirit"){
-                targetCreature.magicienMarks += 1;
-            }
-            targetCreature.damageColor('power',force);
-        } else if (aspect === 'weapon'){
-            const opponent = owner.getOpponent();
-            const force = this.computeValue(aspect);
-
-            const heartPosition = opponent.hasHeartAtPosition();
-            let targetCreature;
-            if(target === -1){
-                if (heartPosition !== -1){
-                    console.log('tried spirit attack on a star with specters, first specter blocked');
-                    targetCreature = opponent.creatures[heartPosition];
-                } else {
-                    opponent.damage(force);
-                    return 'ok'
-                }
-            } else {
-                targetCreature = opponent.creatures.find((creature)=> creature.id === target);
-            }
-            if(this[aspect].value === "J" && this[aspect].color==="weapon"){
-                targetCreature.butcherMark = true;
-            }
-            targetCreature.damageColor('heart',force);
-        } else {
-            console.error(`unrecognised aspect ${aspect}`);
-            return `unrecognised aspect ${aspect}`
+            default:
+                return `aspect ${aspect} unrecognised`;
         }
-        return 'ok';
+        return errorState;
     }
 
     rest(){
@@ -187,7 +223,6 @@ class Creature{
         const card = this[color];
         let errorState = 'ok';
         if(card===undefined){
-            console.log(`tried revealing absent card`);
             return 'tried revealing absent card'
         }
         if(card.visibility === 'Active'){
@@ -271,7 +306,7 @@ class Creature{
         }
         const game = this.getGame();
         if(color === "power" && this.magicienMarks!=0){
-            if(owner.hasSpectreAtPosition()!= -1){
+            if(owner.hasSpectre){
                 let actions = [];
                 for (let index = 0; index < this.magicienMarks; index++) {
                     actions.push("draw");
@@ -335,7 +370,7 @@ class Creature{
         const card = this[color];
         if(card===undefined) return 0;
         let baseValue = card.value;
-        if(card.isHead()){
+        if(card.isHead){
             if (baseValue === "J") {
                 const colorIsRed = color==="heart" || color==="spirit";
                 if (card.color === "sang") {
@@ -482,25 +517,30 @@ class PlayerStatus{
             console.error(`Creating invalid creature`);
             return "invalid creature";
         } else {
-            const checkForTypePresence = this.creatures.findIndex((prevCreature)=>{
-                prevCreature.type === creature.type;
-            })
+            this.creatures.foreach((prevCreature)=>{
+                if(prevCreature.type === creature.type){
+                    return 'creature of same type as previous creature';
+                };
+            });
             if(creature.type === "damne"){
                 console.error(`Can't directly create : damne`);
                 return "Can't directly create : damne";
             }
-            if (checkForTypePresence !== -1) {
-                console.error(`Creating creature of same type as other creature`);
-                return "creature has same type as existing one";
-            } else {
-                this.creatures.push(creature);
-                if(creature.type === "spectre"){
-                    this.damage(5);
-                    this.hasSpectre = true;
-                }
-                this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
-                return "ok"
+            this.creatures.push(creature);
+            if(creature.type === "spectre"){
+                this.damage(5);
+                this.hasSpectre = true;
             }
+            ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((aspect)=>{
+                if(creature[aspect]!==undefined){
+                    creature[aspect].attachedTo = creature.id;
+                }
+            })
+            creature.unRevealAspects();
+            creature.head.visibility = "Active";
+            this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
+            return "ok"
+            
         }
     }
 
@@ -520,14 +560,14 @@ class PlayerStatus{
                 if(target.type === "creature"){
                     let creature = undefined;
                     if(!isOp){
-                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
-                        creature = this.getOpponent.hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
                     }
                     if(creature === undefined){
                         return 'unable to find target creature'
                     }
-                    errorState = creature.damageColor(card.getRawValue());
+                    errorState = creature.damageColor("heart",card.getRawValue());
                 } else if(target.type === "star"){
                     if(!isOp){
                         return `cannot use weapon on own star`;
@@ -543,15 +583,87 @@ class PlayerStatus{
                 break;
             }
             case "spirit":{
-                //TODO
+                if(!target.isOp){
+                    return `cannot use spirit on own star or creatures`;
+                }
+                if(target.type === "creature"){
+                    let opponent = this.getOpponent();
+                    let creature = opponent.creatures.find((elem)=> elem.id === target.creatureId);
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    if(opponent.hasSpectre && creature.type !== "spectre"){
+                        return 'cannot attack opponent creature other than spectre while spectre on field';
+                    }
+                    errorState = creature.damageColor("power",card.getRawValue());
+                } else if(target.type === "star"){
+                    let opponent = this.getOpponent();
+                    if(opponent.hasSpectre){
+                        return 'cannot attack opponent directly with spirit : spectre on field';
+                    }
+                    opponent.damage(card.getRawValue(card.getRawValue()));
+                }else{
+                    return `unable to use spirit on target type ${target.type}`;
+                }
                 break;
             }
             case "power":{
-                //TODO
+                const game = this.getGame();
+                let actions = ["draw", "reveal"];
+                if (card.value == 'Q') {
+                    actions.push('reveal');
+                }
+                if (card.value == 'K') {
+                    actions.push('reveal');
+                    actions.push('reveal');
+                }
+                switch (target.type) {
+                    case "river":
+                    case "source":{
+                        game.activePlayerDrawCard(target.type);
+                        actions.shift();
+                        break;
+                    }
+                    case "creature":{
+                        let creature = undefined;
+                        if(!isOp){
+                            creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                        } else {
+                            creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                        }
+                        if(creature === undefined){
+                            return 'unable to find target creature'
+                        }
+                        errorState = creature.revealCard(target.aspect);
+                        actions.pop();
+                        break;
+                    }
+                    default:
+                        return `unrecognised target type ${target.type}`
+                }
+                game.interrupt({type:"multiAction",actions});
                 break;
             }
             case "sang":{
-                //TODO
+                this.heal(1);
+                if(!target.isOp){
+                    return `cannot use spirit on own star or creatures`;
+                }
+                if(target.type === "creature"){
+                    let creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    errorState = creature.damageColor("power",card.getRawValue());
+                } else if(target.type === "star"){
+                    let opponent = this.getOpponent();
+                    if(opponent.hasSpectre){
+                        return 'cannot attack opponent directly with spirit, spectre on field';
+                    }
+                    opponent.damage(card.getRawValue(card.getRawValue()));
+                }else{
+                    return `unable to use spirit on target type ${target.type}`;
+                }
                 break;
             }
             case "cendre":{
@@ -564,6 +676,7 @@ class PlayerStatus{
         if(errorState === "ok"){
             card.attachedTo = 'River';
             this.getGame().river.push(card);
+            this.removeCardsFromHand([this.hand.findIndex(elem=> elem.id === card.id)]);
         }
         return errorState;
     }
@@ -728,7 +841,7 @@ class GameStatus{
                 this.phase = 1;
                 const returnMessage = this.players[playerId].playArcane(moveDescription.card, moveDescription.target);
                 if(returnMessage !== "ok"){
-                    phase = 0;
+                    this.phase = 0;
                     return {status: "KO", error : returnMessage}
                 }
                 break;
@@ -765,6 +878,9 @@ class GameStatus{
                 const creatureId = moveDescription.creature;
                 const target = moveDescription.target;
                 const creature = this.players[playerId].creatures.find((item)=>item.id === creatureId);
+                if(creature === undefined){
+                    return {status: "KO", error : `unable to find creature with id ${creatureId}`}
+                }
                 const returnMessage = creature.useAspect(aspect, target);
                 if (returnMessage !== 'ok') {
                     return {status: "KO", error : returnMessage}
@@ -800,6 +916,14 @@ class GameStatus{
             }
             default:
                 return {status : "KO", error : `unrecognised move type : ${moveDescription.type}`};
+        }
+        if(!this.firsTurnDone){
+            this.firsTurnDone = true;
+            this.players.forEach(player => {
+                player.hand.forEach(card => {
+                    card.visibility = "Owner";
+                })
+            });
         }
 
 

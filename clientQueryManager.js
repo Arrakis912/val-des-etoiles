@@ -138,7 +138,7 @@ export class QueryManager{
     static requestUpdate(){
         if(!window.playerIsActive){
             this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'update', name: window.STARNAME, game: window.GAMENAME}),(res)=>{
-                console.log(`got update : ${res}`);
+                // console.log(`got update : ${res}`);
                 if (JSON.stringify(window.GAMESTATUS) !== res) {
                     window.GAMESTATUS = JSON.parse(res);
                     if(window.GAMESTATUS.started){
