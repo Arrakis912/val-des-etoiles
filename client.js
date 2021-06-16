@@ -41,6 +41,10 @@ function disconnect(){
 
 function clickSource(){
     console.log('clicked source');
+    if(phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction" && window.GAMESTATUS.interuptionObject.drawCount>0){
+        sendMove({type:"resolveMultiAction", action: "draw", target : {type : "source"}});
+        return;
+    }
     switch(window.UIState){
         case "endingTurn":{
             sendMove({type:"endPhase", drawFrom : "source"});
@@ -58,6 +62,10 @@ function clickSource(){
 
 function clickRiver(){
     console.log('clicked river');
+    if(phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction" && window.GAMESTATUS.interuptionObject.drawCount>0){
+        sendMove({type:"resolveMultiAction", action: "draw", target : {type : "river"}});
+        return;
+    }
     switch(window.UIState){
         case "endingTurn":{
             sendMove({type:"endPhase", drawFrom : "river"});
@@ -132,7 +140,11 @@ function clickCard(cardId, value, color){
                     break;
                 }
                 case "multiAction":{
-                    //TODO
+                    if(window.GAMESTATUS.interuptionObject.revealCount>0){
+                        sendMove({type:"resolveMultiAction", action: "reveal", target : {type : "creature", isOp, creatureId, aspect}});
+                    }else if(window.GAMESTATUS.interuptionObject.attack){
+                        sendMove({type:"resolveMultiAction", action: "attack", target : {type : "creature", isOp, creatureId, aspect}});
+                    }
                     break;
                 }
                 default:
@@ -351,7 +363,6 @@ function makePlayerCreatures(gameStatus, playerId, isOp){
 }
 
 function makeCard(card,base_revealed=true){
-    //TODO : check visibility and handle better hiding cards
     let revealed = base_revealed;
     switch(card.visibility){
         case "Active":
@@ -496,7 +507,6 @@ function makeCreatureSlot(){
 }
 
 function makeSlot(left,top){
-    //TODO : check visibility and handle better hiding cards
     let slotElem = document.createElement('label');
     slotElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; border: ${CARDBORDER}px solid black; position: absolute; top: ${top}px; left: ${left}px`;
     slotElem.innerHTML = 'Slot';

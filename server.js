@@ -229,31 +229,33 @@ class Creature{
             return 'ok'
         }
         card.visibility = forWho;
-        if (card.value === 'J') {
-            if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
-                if (card.color !== color || this.head.color !== color) {//check Homme Liges
-                    errorState = this.handleInvalidCardReveal(color);//if none, bad card
+        if(forWho !== this.owner){
+            if (card.value === 'J') {
+                if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
+                    if (card.color !== color || this.head.color !== color) {//check Homme Liges
+                        errorState = this.handleInvalidCardReveal(color);//if none, bad card
+                    }
                 }
-            }
-        }else if(card.value === 'Q'){
-            if(this.head.value !== 'K' || this.head.color !== card.color || color !== "heart"){//check lovers
+            }else if(card.value === 'Q'){
+                if(this.head.value !== 'K' || this.head.color !== card.color || color !== "heart"){//check lovers
+                    errorState = this.handleInvalidCardReveal(color);
+                }
+                else{
+                    errorState = this.ripCard(color);
+                    this.type = "spectre royal";
+                }
+            }else if(card.value === 'K'){
+                if(this.head.value !== 'Q' || this.head.color !== card.color || color !== "heart"){// check lovers
+                    errorState = this.handleInvalidCardReveal(color);
+                }
+                else{
+                    errorState = this.ripCard(color);
+                    this.type = "dame noire";
+                }
+                
+            }else if(card.color != color){
                 errorState = this.handleInvalidCardReveal(color);
             }
-            else{
-                errorState = this.ripCard(color);
-                this.type = "spectre royal";
-            }
-        }else if(card.value === 'K'){
-            if(this.head.value !== 'Q' || this.head.color !== card.color || color !== "heart"){// check lovers
-                errorState = this.handleInvalidCardReveal(color);
-            }
-            else{
-                errorState = this.ripCard(color);
-                this.type = "dame noire";
-            }
-            
-        }else if(card.color != color){
-            errorState = this.handleInvalidCardReveal(color);
         }
         return errorState;
     }
@@ -625,10 +627,10 @@ class PlayerStatus{
                     }
                     errorState = creature.revealCard(target.aspect, this.name);
                     revealCount -= 1;
-                    if(revealCount === 0 && !this.hasSpectre){
-                        game.activePlayerDraw(target.type, drawCount);
-                    } else {
+                    if(this.hasSpectre || revealCount !== 0){
                         game.interrupt({type:"multiAction", drawCount, revealCount});
+                    } else {
+                        game.activePlayerDraw("source", drawCount);
                     }
                 } else {
                         return `unrecognised target type ${target.type}`;
@@ -658,7 +660,34 @@ class PlayerStatus{
                 break;
             }
             case "cendre":{
-                //TODO
+                const game = this.getGame();
+                let drawCount = 1;
+                let revealCount = 1;
+                if(target.type ==="river" && !this.hasSpectre){
+                    return 'impossible to draw at river without a spectre!'
+                }
+                if(target.type === "river" || target.type === "source"){
+                    game.activePlayerDraw(target.type, drawCount);
+                    game.interrupt({type:"multiAction", drawCount:0, revealCount, attack:true});
+                } else if (target.type === "creature"){
+                    let creature = undefined;
+                    if(!isOp){
+                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                    } else {
+                        creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                    }
+                    if(creature === undefined){
+                        return 'unable to find target creature';
+                    }
+                    errorState = creature.revealCard(target.aspect, this.name);
+                    if(this.hasSpectre){
+                        game.interrupt({type:"multiAction", drawCount, revealCount:0});
+                    } else {
+                        game.activePlayerDraw("source", drawCount);
+                    }
+                } else {
+                        return `unrecognised target type ${target.type}`;
+                }
                 break;
             }
             default:
@@ -677,7 +706,27 @@ class PlayerStatus{
         if(card === undefined){
             return `card ${cardId} not found in hand : ${JSON.stringify(this.hand)}`
         }
-        //TODO
+        let creature = undefined;
+        if(target.isOp){
+            return "non mirror can't educate opponent. Mirror educating capacities not implemented."
+            //TODO
+            creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+        } else {
+            creature = this.creatures.find((elem)=> elem.id === target.creatureId);
+        }
+        if(creature === undefined){
+            return 'unable to find target creature'
+        }
+        if(target.aspect === "head"){
+            return 'cant educate the head except for mirrors. Mirror education capacities not implemented'
+            //TODO
+        }
+        if(card.isHead){
+
+        }
+        this.obtainCard(creature[target.aspect]);
+        creature[target.aspect] = card;
+        //TODO : validity checks
         return 'ok'
     }
 
@@ -908,30 +957,48 @@ class GameStatus{
             case "resolveMultiAction":{
                 if (this.phase !== -2) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
-                } 
+                }
                 let actionType = moveDescription.action;
                 let target = moveDescription.target;
-                let actionPosInList = this.interuptionObject.actions.findIndex(elem=>(elem===actionType));
-                if (actionPosInList === -1) {
-                    return {status : "KO", error : `action type : ${actionType} not in multi Action list ${JSON.stringify(this.interuptionObject.actions)}`};
-                }
                 switch (actionType) {
                     case "draw":{
-                        if(target.type === "source"){
-                            activePlayerDrawCard(target.type)
-                        } else if (target.type === "river"){
-
-                        } else {
-
+                        if (this.interuptionObject.drawCount === 0) {
+                            return {status : "KO", error : `draw unavailable`};
                         }
-                        //TODO
+                        if (target.type === "river" && !this.players[this.activePlayer].hasSpectre) {
+                            return {status : "KO", error : `draw unavailable from river with no spectre`};
+                        }
+                        if(target.type === "source" || target.type === "river"){
+                            let count = this.interuptionObject.drawCount + ((this.interuptionObject.isDN && target.type === "river")?(this.ruleSet==="Helios"?2:1):0);
+                            this.activePlayerDraw(target.type, count);
+                            this.interuptionObject.drawCount = 0;
+                            this.checkMultiActionCompletion();
+                        } else {
+                            return {status : "KO", error : `draw impossible on target ${target.type}`};
+                        }
                         break;
                     }
                     case "reveal":{
-                        //TODO
+                        if (this.interuptionObject.revealCount === 0) {
+                            return {status : "KO", error : `reveal unavailable`};
+                        }
+                        if (target.type !== "creature") {
+                            return {status : "KO", error : `cant reveal target of type ${target.type}`};
+                        }
+                        let owner = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                        let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
+                        let errorState = creature.revealCard(target.aspect, this.players[this.activePlayer].name);
+                        if(errorState !== 'ok'){
+                            return {status : "KO", error : errorState};
+                        }
+                        this.interuptionObject.revealCount -=1;
+                        this.checkMultiActionCompletion();
                         break;
                     }
                     case "attack":{//attack in multiaction only with the cendre joker, so its a 1 of weapon
+                        if (!this.interuptionObject.attack) {
+                            return {status : "KO", error : `attack unavailable`};
+                        }
                         if(target.type === "creature"){
                             let owner = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
                             let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
@@ -939,6 +1006,7 @@ class GameStatus{
                             if(errorState !== 'ok'){
                                 return {status : "KO", error : errorState};
                             }
+                            this.interuptionObject.attack = false;
                         }
                         else if(target.type === "star"){
                             let targetStar = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
@@ -946,9 +1014,11 @@ class GameStatus{
                                 return {status : "KO", error : `cant use weapon on ${targetStar.name}, it has a creature with heart`};
                             }
                             targetStar.damage(1);
+                            this.interuptionObject.attack = false;
                         } else {
                             return {status : "KO", error : `trying to attack ${target.type}`};
                         }
+                        this.checkMultiActionCompletion();
                         break;
                     }
                     default:
@@ -1017,6 +1087,19 @@ class GameStatus{
         this.phase = this.interruptFlow.phase;
         this.activePlayer = this.interruptFlow.activePlayer;
         this.interruptFlow = previousInt;
+    }
+
+    checkMultiActionCompletion(){
+        let inter = this.interuptionObject;
+        if( inter === undefined){
+            console.error('should not call this function')
+            return true;
+        }
+        if (inter.type === "multiAction" && inter.drawCount === 0 && inter.revealCount === 0 && !inter.attack) {
+            this.unInteruptFlow();
+            return true;
+        }
+        return false;
     }
 
     log(gameEvent){
