@@ -160,50 +160,49 @@ class Creature{
             }
             case "power":{
                 const game = this.getGame();
-                let isDN = (this.type === "dame noire");
-                let actions = ["draw"];
+                const owner = this.getOwner();
+                let revealCount = 1;
+                let drawCount = 1;
                 if(this.type === "fou"){
-                    actions.push("draw");
+                    drawCount+=1;
                     if(game.ruleSet === "Helios"){
-                        actions.push("draw");
+                        drawCount+=1;
                     }
                 }
-                actions.push("reveal");
+                if(this.type === "dame noire" && target.type === "river"){
+                    drawCount+=1;
+                    if(game.ruleSet === "Helios"){
+                        drawCount+=1;
+                    }
+                }
                 if(this.power.value === 'J' && this.power.color === 'power'){
-                    actions.push("draw");
-                    const addedDrawNumber = actions.length-2;
-                    for (let index = 0; index < addedDrawNumber; index++) {
-                        actions.push("reveal");
-                    }
+                    drawCount+=1;
+                    revealCount = drawCount;
                 }
-                switch (target.type) {
-                    case "river":
-                    case "source":{
-                        game.activePlayerDrawCard(target.type);
-                        if(isDN && target.type === "river"){
-                            game.activePlayerDrawCard(target.type);
-                        }
-                        actions.shift();
-                        break;
-                    }
-                    case "creature":{
-                        let creature = undefined;
-                        if(!isOp){
-                            creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
-                        } else {
-                            creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
-                        }
-                        if(creature === undefined){
-                            return 'unable to find target creature'
-                        }
-                        errorState = creature.revealCard(target.aspect);
-                        actions.pop();
-                        break;
-                    }
-                    default:
-                        return `unrecognised target type ${target.type}`
+                if(target.type === "river" && !owner.hasSpectre){
+                    return 'impossible to draw at river without a spectre!'
                 }
-                game.interrupt({type:"multiAction",actions, isDN});
+                if(target.type === "source" || target.type === "river"){
+                    game.activePlayerDraw(target.type, drawCount);
+                    game.interrupt({type:"multiAction", drawCount : 0, revealCount});
+                } else if(target.type = "creature"){
+                    let creature = undefined;
+                    if(!isOp){
+                        creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
+                    } else {
+                        creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+                    }
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    errorState = creature.revealCard(target.aspect, this.owner);
+                    revealCount-=1;
+                    if(revealCount > 0 || owner.hasSpectre){
+                        game.interrupt({type:"multiAction", drawCount, revealCount, isDN:(this.type === "dame noire")});
+                    }
+                } else {
+                    return `unrecognised target type ${target.type}`
+                }
                 break;
             }
             default:
@@ -219,17 +218,17 @@ class Creature{
         this.butcherMark = false;
     }
 
-    revealCard(color){
+    revealCard(color, forWho="Active"){
         const card = this[color];
         let errorState = 'ok';
         if(card===undefined){
             return 'tried revealing absent card'
         }
-        if(card.visibility === 'Active'){
+        if(card.visibility === 'Active' || card.visibility === forWho){
             console.log('revealing already revealed card : do nothing');
             return 'ok'
         }
-        card.visibility = 'Active';
+        card.visibility = forWho;
         if (card.value === 'J') {
             if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
                 if (card.color !== color || this.head.color !== color) {//check Homme Liges
@@ -307,21 +306,13 @@ class Creature{
         const game = this.getGame();
         if(color === "power" && this.magicienMarks!=0){
             if(owner.hasSpectre){
-                let actions = [];
+                let drawCount = (game.ruleSet === "Helios"?2:1);
                 for (let index = 0; index < this.magicienMarks; index++) {
-                    actions.push("draw");
-                    if(game.ruleSet === "Helios"){
-                        actions.push("draw")
-                    }
+                    game.interrupt({type:"multiAction", drawCount, revealCount :0});
                 }
-                game.interrupt({type:"multiAction",actions});
             } else {
-                for (let index = 0; index < this.magicienMarks; index++) {
-                    game.activePlayerDrawCard("source");
-                    if(game.ruleSet === "Helios"){
-                        game.activePlayerDrawCard("source");
-                    }
-                }
+                let drawCount = this.magicienMarks * (game.ruleSet === "Helios"?2:1);
+                game.activePlayerDraw("source", drawCount);
             }
         }
         this.buryCard(color);
@@ -517,7 +508,7 @@ class PlayerStatus{
             console.error(`Creating invalid creature`);
             return "invalid creature";
         } else {
-            this.creatures.foreach((prevCreature)=>{
+            this.creatures.forEach((prevCreature)=>{
                 if(prevCreature.type === creature.type){
                     return 'creature of same type as previous creature';
                 };
@@ -609,39 +600,39 @@ class PlayerStatus{
             }
             case "power":{
                 const game = this.getGame();
-                let actions = ["draw", "reveal"];
+                let drawCount = 1;
+                let revealCount = 1;
                 if (card.value == 'Q') {
-                    actions.push('reveal');
+                    revealCount = 2;
+                } else if (card.value == 'K') {
+                    revealCount = 3;
                 }
-                if (card.value == 'K') {
-                    actions.push('reveal');
-                    actions.push('reveal');
+                if(target.type ==="river" && !this.hasSpectre){
+                    return 'impossible to draw at river without a spectre!'
                 }
-                switch (target.type) {
-                    case "river":
-                    case "source":{
-                        game.activePlayerDrawCard(target.type);
-                        actions.shift();
-                        break;
+                if(target.type === "river" || target.type === "source"){
+                    game.activePlayerDraw(target.type, drawCount);
+                    game.interrupt({type:"multiAction", drawCount : 0, revealCount});
+                } else if (target.type === "creature"){
+                    let creature = undefined;
+                    if(!isOp){
+                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                    } else {
+                        creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
                     }
-                    case "creature":{
-                        let creature = undefined;
-                        if(!isOp){
-                            creature = this.hand.find((elem)=> elem.id === target.creatureId);
-                        } else {
-                            creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
-                        }
-                        if(creature === undefined){
-                            return 'unable to find target creature'
-                        }
-                        errorState = creature.revealCard(target.aspect);
-                        actions.pop();
-                        break;
+                    if(creature === undefined){
+                        return 'unable to find target creature';
                     }
-                    default:
-                        return `unrecognised target type ${target.type}`
+                    errorState = creature.revealCard(target.aspect, this.name);
+                    revealCount -= 1;
+                    if(revealCount === 0 && !this.hasSpectre){
+                        game.activePlayerDraw(target.type, drawCount);
+                    } else {
+                        game.interrupt({type:"multiAction", drawCount, revealCount});
+                    }
+                } else {
+                        return `unrecognised target type ${target.type}`;
                 }
-                game.interrupt({type:"multiAction",actions});
                 break;
             }
             case "sang":{
@@ -887,7 +878,7 @@ class GameStatus{
                 }
                 break;
             }
-            case "buryCreature":{
+            case "buryCard":{
                 if (this.phase != -2 || this.interruptFlow === undefined || this.interruptFlow.type !=="bury") {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interruptFlow}`};
                 }
@@ -903,7 +894,7 @@ class GameStatus{
                     this.phase = 1;
                 } else if (this.phase === 1){//end Turn
                     //draw card
-                    this.activePlayerDrawCard(moveDescription.drawFrom);
+                    this.activePlayerDraw(moveDescription.drawFrom);
                     //set active player to next player and restart turn, and unreveal all revealed cards of both
                     this.players[this.activePlayer].unRevealAll();
                     this.activePlayer = (this.activePlayer + 1)%this.players.length;
@@ -911,6 +902,57 @@ class GameStatus{
                     this.phase = 0;
                 } else {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                }
+                break;
+            }
+            case "resolveMultiAction":{
+                if (this.phase !== -2) {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                } 
+                let actionType = moveDescription.action;
+                let target = moveDescription.target;
+                let actionPosInList = this.interuptionObject.actions.findIndex(elem=>(elem===actionType));
+                if (actionPosInList === -1) {
+                    return {status : "KO", error : `action type : ${actionType} not in multi Action list ${JSON.stringify(this.interuptionObject.actions)}`};
+                }
+                switch (actionType) {
+                    case "draw":{
+                        if(target.type === "source"){
+                            activePlayerDrawCard(target.type)
+                        } else if (target.type === "river"){
+
+                        } else {
+
+                        }
+                        //TODO
+                        break;
+                    }
+                    case "reveal":{
+                        //TODO
+                        break;
+                    }
+                    case "attack":{//attack in multiaction only with the cendre joker, so its a 1 of weapon
+                        if(target.type === "creature"){
+                            let owner = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                            let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
+                            let errorState = creature.damageColor("heart", 1);
+                            if(errorState !== 'ok'){
+                                return {status : "KO", error : errorState};
+                            }
+                        }
+                        else if(target.type === "star"){
+                            let targetStar = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                            if(targetStar.hasHeartAtPosition()!==-1){
+                                return {status : "KO", error : `cant use weapon on ${targetStar.name}, it has a creature with heart`};
+                            }
+                            targetStar.damage(1);
+                        } else {
+                            return {status : "KO", error : `trying to attack ${target.type}`};
+                        }
+                        break;
+                    }
+                    default:
+                        return {status : "KO", error : `invalid action : ${actionType}`};
                 }
                 break;
             }
@@ -930,24 +972,28 @@ class GameStatus{
         return {status: "OK"};
     }
 
-    activePlayerDrawCard(drawFrom="source"){
+    activePlayerDraw(drawFrom="source", number = 1){
         switch (drawFrom) {
-            case "river":
-                if(this.river.length == 0){
-                    console.error('tried taking card from empty river');
-                }else{
+            case "river":{
+                let drawCount = Math.min(this.river.length, number)
+                for (let index = 0; index < drawCount; index++) {
                     this.players[this.activePlayer].obtainCard(this.river.pop());
                 }
                 break;
+            }
             default:
                 console.log(`drawing card from unrecognised ${drawFrom} area, defaulted to source`)
-            case "source":
-                if(this.source.length <= 1){
-                    this.sunRise();
-                } else {
-                    this.players[this.activePlayer].obtainCard(this.source.shift());
+            case "source":{
+                for (let index = 0; index < Math.min(this.source.length, number); index++) {
+                    if(this.source.length <= 1){
+                        this.sunRise();
+                        break;
+                    } else {
+                        this.players[this.activePlayer].obtainCard(this.source.shift());
+                    }
                 }
                 break;
+            }
         }
     }
 
@@ -956,9 +1002,9 @@ class GameStatus{
     }
 
     interrupt(interuptionObject){
-        this.interuptionObject.phase = this.phase;
-        this.interuptionObject.activePlayer = this.player;
         if (this.phase == -2) {
+            this.interuptionObject.phase = this.phase;
+            this.interuptionObject.activePlayer = this.player;
             interuptionObject.previousInterruption = this.interruptFlow;
         } else {
             this.phase = -2;

@@ -82,6 +82,12 @@ function clickRay(isOp){
 
 function clickCard(cardId, value, color){
     const cardElem = document.getElementById(`Card_${cardId}`);
+    if(window.selectedCard === cardId){//unselect selected card if clicked
+        cardElem.classList.remove('selected');
+        window.selectedCard = undefined;
+        window.selectedFunction = undefined;
+        window.UIState = window.savedUIState;
+    }
     const root = cardElem.parentElement;
     const rootName = root.getAttribute('id');
     const phase = window.GAMESTATUS.phase;
@@ -94,12 +100,10 @@ function clickCard(cardId, value, color){
         } else {//Star Phase
             selectCard(cardElem, cardId);
             if(window.UIState === "educating"){
-                window.UIState = "searchTarget";
                 window.selectedFunction = (target)=>{
                     sendMove({type:"educate",card : window.selectedCard, target});
                 }
             } else {// Play Card : must select target
-                window.UIState = "searchTarget";
                 window.selectedFunction = (target)=>{
                     sendMove({type:"useCard",card : window.selectedCard, target});
                 }
@@ -113,17 +117,30 @@ function clickCard(cardId, value, color){
         if(window.UIState === "searchTarget"){
             window.selectedFunction({type : "creature", isOp, creatureId, aspect})
         } else if (phase === 1 && !isOp){// Play Creature Aspect : must select target
-            if(window.selectedCard !== undefined){
-                document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
-            }
-            cardElem.classList.add('selected');
-            window.selectedCard = cardId;
-            window.UIState = "searchTarget";
+            selectCard(cardElem, cardId);
             window.selectedFunction = (target)=>{
                 sendMove({type:"CreatureAction", aspect, creature : creatureId, target});
             }
+        } else if(phase === -2){
+            switch (window.GAMESTATUS.interuptionObject.type) {
+                case "bury":{
+                    if (creatureId === window.GAMESTATUS.interuptionObject.creature.id) {
+                        sendMove({type:"buryCard", aspect});
+                    } else {
+                        console.log(`clicked on creature which isn't the one we are burying`)
+                    }
+                    break;
+                }
+                case "multiAction":{
+                    //TODO
+                    break;
+                }
+                default:
+                    console.error(`unrecognised interruption type for click on card`);
+                    break;
+            }
         } else {
-            console.log(`no action defined for card in present phase and state`);
+            console.error(`no action defined for card in present phase and state`);
         }
     } else if(rootName === 'River'){
         clickRiver();
@@ -135,6 +152,9 @@ function clickCard(cardId, value, color){
 function selectCard(cardElem, cardId){
     if(window.selectedCard !== undefined){
         document.getElementById(`CARD_${window.selectedCard}`).classList.remove('selected');
+    } else if(window.UIState !== "searchTarget" && window.UIState !== "createCreature") {
+        window.savedUIState = window.UIState;
+        window.UIState = "searchTarget";
     }
     cardElem.classList.add('selected');
     window.selectedCard = cardId;
@@ -196,7 +216,7 @@ function updateUI(){
     let gameBoard = document.getElementById("gameBoard");
     gameBoard.innerHTML='';
     gameBoard.appendChild(makeInfoLine(gameStatus,activePlayerName,playerIsActive));
-    gameBoard.appendChild(makeButtons(gameStatus, playerIndex, playerIsActive));
+    gameBoard.appendChild(makeButtonLine(gameStatus, playerIndex, playerIsActive));
     gameBoard.appendChild(makeField(gameStatus, opIndex, true));
     gameBoard.appendChild(makeSource(gameStatus.source.length));
     gameBoard.appendChild(makeRiver(gameStatus));
@@ -213,41 +233,32 @@ function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     return line;
 }
 
-function makeButtons(gameStatus, playerIndex, playerIsActive){
+function makeButtonLine(gameStatus, playerIndex, playerIsActive){
     let line = document.createElement('div');
     line.setAttribute('id','GameButtons');
-    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px`;
+    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px; display:flex;`;
     if(playerIsActive){
+        line.appendChild(makeButton("cancelMoveButton", "Annuler", clickCancelMoveButton));
         if(gameStatus.phase === 0 || gameStatus.phase === 1){
-            let skipPhaseButton = document.createElement('button');
-            skipPhaseButton.setAttribute('id','skipPhaseButton');
-            skipPhaseButton.innerHTML = 'Finir Phase';
-            skipPhaseButton.addEventListener('click', clickGameButtonSkip);
-            skipPhaseButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${0}px`;
-            line.appendChild(skipPhaseButton);
+            line.appendChild(makeButton("skipPhaseButton", "Finir Phase", clickGameButtonSkip));
+            if(gameStatus.phase === 0){
+                line.appendChild(makeButton("createCreatureButton", "Engendrer", clickCreateCreatureButton));
+                line.appendChild(makeButton("educateButton", "Eduquer", clickEducateButton));
+            }
+        } else if (gameStatus.phase === -2 && ) {
+
         }
-        if(gameStatus.phase === 0){
-            let createCreatureButton = document.createElement('button');
-            createCreatureButton.setAttribute('id','createCreatureButton');
-            createCreatureButton.innerHTML = 'Engendrer';
-            createCreatureButton.addEventListener('click', clickCreateCreatureButton);
-            createCreatureButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*3}px`;
-            line.appendChild(createCreatureButton);
-            let educateButton = document.createElement('button');
-            educateButton.setAttribute('id','educateButton');
-            educateButton.innerHTML = 'Eduquer';
-            educateButton.addEventListener('click', clickEducateButton);
-            educateButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*6}px`;
-            line.appendChild(educateButton);
-        }
-        let cancelMoveButton = document.createElement('button');
-        cancelMoveButton.setAttribute('id','cancelMoveButton');
-        cancelMoveButton.innerHTML = 'Annuler';
-        cancelMoveButton.addEventListener('click', clickCancelMoveButton);
-        cancelMoveButton.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px; position: absolute; top: 0px; left: ${CARDWIDTHWITHBORDER*6}px`;
-        line.appendChild(cancelMoveButton);
     }
     return line;
+}
+
+function makeButton(id, text, callback){
+    let button = document.createElement('button');
+    button.setAttribute('id',id);
+    button.innerHTML = text;
+    button.addEventListener('click', callback);
+    button.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px;`;
+    return button;
 }
 
 function textInstruction(gameStatus){
@@ -351,6 +362,8 @@ function makeCard(card,base_revealed=true){
             break;
         case "Owner":
             break;
+        case window.STARNAME:
+            revealed = true;
         default:
             console.error(`unrecognised visibility value ${card.visibility} in card ${card.id}`);
     }

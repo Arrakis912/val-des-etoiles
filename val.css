@@ -1,5 +1,6 @@
 .selected{
     border: 3px solid yellow;
+    background-color: crimson;
 }
 .dying{
     border: 3px solid red;
