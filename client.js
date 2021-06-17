@@ -473,11 +473,8 @@ function makeCreatureSlot(){
     creatureElem.appendChild(weaponSlot);
     const powerSlot = makeSlot(CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
     creatureElem.appendChild(powerSlot);
-
-    let validateCreatureButton = document.createElement('button');
-    validateCreatureButton.setAttribute('id','validateCreatureButton');
-    validateCreatureButton.innerHTML = 'Engendrer';
-    validateCreatureButton.addEventListener('click', ()=>{
+    
+    let validateCreatureButton = makeButton("validateCreatureButton", "Engendrer", ()=>{
         window.UIState = "none";
         sendMove({
             type: "makeCreature",
@@ -489,17 +486,14 @@ function makeCreatureSlot(){
                 "power":parseInt(powerSlot.hasAttribute('card')?powerSlot.getAttribute('card'):undefined)
             }
         });
-    });
+    })
     validateCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: ${2*CARDWIDTHWITHBORDER}px`;
     creatureElem.appendChild(validateCreatureButton);
 
-    let cancelCreatureButton = document.createElement('button');
-    cancelCreatureButton.setAttribute('id','cancelCreatureButton');
-    cancelCreatureButton.innerHTML = 'Annuler';
-    cancelCreatureButton.addEventListener('click', ()=>{
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "Annuler", ()=>{
         window.UIState = "none";
         creatureElem.remove();
-    });
+    })
     cancelCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: 0px`;
     creatureElem.appendChild(cancelCreatureButton);
 
