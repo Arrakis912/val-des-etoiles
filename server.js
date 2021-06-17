@@ -102,10 +102,9 @@ class Creature{
                 break;
             }
             case "weapon":{
-                let isOp = target.isOp;
                 if(target.type === "creature"){
                     let creature = undefined;
-                    if(!isOp){
+                    if(!target.isOp){
                         creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
                         creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
@@ -118,7 +117,7 @@ class Creature{
                     }
                     errorState = creature.damageColor("heart",this.computeValue(aspect));
                 } else if(target.type === "star"){
-                    if(!isOp){
+                    if(!target.isOp){
                         return `cannot use weapon on own star`;
                     }
                     let opponent = owner.getOpponent();
@@ -187,7 +186,7 @@ class Creature{
                     game.interrupt({type:"multiAction", drawCount : 0, revealCount});
                 } else if(target.type = "creature"){
                     let creature = undefined;
-                    if(!isOp){
+                    if(!target.isOp){
                         creature = owner.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
                         creature = owner.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
@@ -549,10 +548,9 @@ class PlayerStatus{
                 break;
             }
             case "weapon":{
-                let isOp = target.isOp;
                 if(target.type === "creature"){
                     let creature = undefined;
-                    if(!isOp){
+                    if(!target.isOp){
                         creature = this.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
                         creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
@@ -562,7 +560,7 @@ class PlayerStatus{
                     }
                     errorState = creature.damageColor("heart",card.getRawValue());
                 } else if(target.type === "star"){
-                    if(!isOp){
+                    if(!target.isOp){
                         return `cannot use weapon on own star`;
                     }
                     let opponent = this.getOpponent();
@@ -617,7 +615,7 @@ class PlayerStatus{
                     game.interrupt({type:"multiAction", drawCount : 0, revealCount});
                 } else if (target.type === "creature"){
                     let creature = undefined;
-                    if(!isOp){
+                    if(!target.isOp){
                         creature = this.hand.find((elem)=> elem.id === target.creatureId);
                     } else {
                         creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
@@ -671,7 +669,7 @@ class PlayerStatus{
                     game.interrupt({type:"multiAction", drawCount:0, revealCount, attack:true});
                 } else if (target.type === "creature"){
                     let creature = undefined;
-                    if(!isOp){
+                    if(!target.isOp){
                         creature = this.hand.find((elem)=> elem.id === target.creatureId);
                     } else {
                         creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
@@ -775,7 +773,7 @@ class GameStatus{
         this.activePlayer = -1;
         this.phase = -1;
         this.summary = [];
-        this.interruptFlow = undefined;
+        this.interuptionObject = undefined;
     }
 
     setGameStateToKillingCreature(creature){
@@ -928,12 +926,11 @@ class GameStatus{
                 break;
             }
             case "buryCard":{
-                if (this.phase != -2 || this.interruptFlow === undefined || this.interruptFlow.type !=="bury") {
-                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interruptFlow}`};
+                if (this.phase != -2 || this.interuptionObject === undefined || this.interuptionObject.type !=="bury") {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interuptionObject}`};
                 }
-                const aspectToBury = moveDescription.card;
-                this.interruptFlow.creature.buryCard(aspectToBury);
-                if (this.interruptFlow.creature.endOfBurial()) {
+                this.interuptionObject.creature.buryCard(moveDescription.aspect);
+                if (this.interuptionObject.creature.endOfBurial()) {
                     this.unInteruptFlow();
                 }
                 break;
@@ -961,6 +958,10 @@ class GameStatus{
                 let actionType = moveDescription.action;
                 let target = moveDescription.target;
                 switch (actionType) {
+                    case "skip":{
+                        this.interuptionObject.revealCount = 0;
+                        break;
+                    }
                     case "draw":{
                         if (this.interuptionObject.drawCount === 0) {
                             return {status : "KO", error : `draw unavailable`};
@@ -972,7 +973,6 @@ class GameStatus{
                             let count = this.interuptionObject.drawCount + ((this.interuptionObject.isDN && target.type === "river")?(this.ruleSet==="Helios"?2:1):0);
                             this.activePlayerDraw(target.type, count);
                             this.interuptionObject.drawCount = 0;
-                            this.checkMultiActionCompletion();
                         } else {
                             return {status : "KO", error : `draw impossible on target ${target.type}`};
                         }
@@ -985,14 +985,13 @@ class GameStatus{
                         if (target.type !== "creature") {
                             return {status : "KO", error : `cant reveal target of type ${target.type}`};
                         }
-                        let owner = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                        let owner = target.isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
                         let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
                         let errorState = creature.revealCard(target.aspect, this.players[this.activePlayer].name);
                         if(errorState !== 'ok'){
                             return {status : "KO", error : errorState};
                         }
                         this.interuptionObject.revealCount -=1;
-                        this.checkMultiActionCompletion();
                         break;
                     }
                     case "attack":{//attack in multiaction only with the cendre joker, so its a 1 of weapon
@@ -1000,7 +999,7 @@ class GameStatus{
                             return {status : "KO", error : `attack unavailable`};
                         }
                         if(target.type === "creature"){
-                            let owner = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                            let owner = target.isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
                             let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
                             let errorState = creature.damageColor("heart", 1);
                             if(errorState !== 'ok'){
@@ -1009,7 +1008,7 @@ class GameStatus{
                             this.interuptionObject.attack = false;
                         }
                         else if(target.type === "star"){
-                            let targetStar = isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
+                            let targetStar = target.isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
                             if(targetStar.hasHeartAtPosition()!==-1){
                                 return {status : "KO", error : `cant use weapon on ${targetStar.name}, it has a creature with heart`};
                             }
@@ -1018,12 +1017,12 @@ class GameStatus{
                         } else {
                             return {status : "KO", error : `trying to attack ${target.type}`};
                         }
-                        this.checkMultiActionCompletion();
                         break;
                     }
                     default:
                         return {status : "KO", error : `invalid action : ${actionType}`};
                 }
+                this.checkMultiActionCompletion();
                 break;
             }
             default:
@@ -1072,21 +1071,21 @@ class GameStatus{
     }
 
     interrupt(interuptionObject){
+        interuptionObject.phase = this.phase;
+        interuptionObject.activePlayer = this.activePlayer;
         if (this.phase == -2) {
-            this.interuptionObject.phase = this.phase;
-            this.interuptionObject.activePlayer = this.player;
-            interuptionObject.previousInterruption = this.interruptFlow;
+            interuptionObject.previousInterruption = this.interuptionObject;
         } else {
             this.phase = -2;
         }
-        this.interruptFlow=interuptionObject
+        this.interuptionObject=interuptionObject;
     }
 
     unInteruptFlow(){
-        const previousInt = this.interruptFlow.previousInterruption;
-        this.phase = this.interruptFlow.phase;
-        this.activePlayer = this.interruptFlow.activePlayer;
-        this.interruptFlow = previousInt;
+        const previousInt = this.interuptionObject.previousInterruption;
+        this.phase = this.interuptionObject.phase;
+        this.activePlayer = this.interuptionObject.activePlayer;
+        this.interuptionObject = previousInt;
     }
 
     checkMultiActionCompletion(){

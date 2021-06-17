@@ -8,21 +8,22 @@
 </head>
 <body>
 
-    <h1>Le Val Des Etoiles</h1>
     <div id = "initPage">
+        <h1>Le Val Des Etoiles</h1>
         <label for="fname">Nom d'étoile</label>
         <input type="text" id="input_name" value="Arrakis"><br><br>
         <label for="fname">Serveur</label>
         <input type="text" id="input_url" value="localhost:666"><br><br>
         <button id="connectButton">Se connecter</button>
     </div>
-    <div id = "gameListPage" style='display:none'>
+    <div id = "gameListPage" style='display:none;'>
+        <h1>Le Val Des Etoiles</h1>
         <label id="welcome">Bienvenu, étoile</label><br><br>
         <div id="GameList"></div><br><br>
         <button id="newGameButton">Nouvelle Partie</button>
         <button id="DisconnectButton">Déconnecter</button>
     </div>
-    <div id = "gameBoard" style='display:none; position: absolute; width:100%'>
+    <div id = "gameBoard" style='display:none;'>
         <label id="gameInfo"></label><br><br>
         <button id="backToListButton">Retour à la liste des Parties</button>
     </div>

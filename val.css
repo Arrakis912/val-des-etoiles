@@ -1,15 +1,42 @@
-.selected{
-    border: 3px solid yellow;
-    background-color: crimson;
+body{
+    background-color: black;
+    color: cyan;
+    --card-height: 40px;
+    --card-width: 40px;
+    --card-border-size: 3px;
+    --card-margin: 1px;
 }
 .dying{
-    border: 3px solid red;
+    border: var(--card-border-size) solid red;
+}
+.card{
+    height: var(--card-height);
+    width: var(--card-width);
+    border: var(--card-border-size) solid cyan;
+    margin: var(--card-margin);
+}
+.card.selected{
+    border: var(--card-border-size) solid yellow;
+    background-color: crimson;
+}
+.creatureVoidFiller{
+    height: var(--card-height);
+    width: var(--card-width);
+    border: var(--card-border-size) solid black;
+    margin: var(--card-margin);
 }
 label{
     text-align: center;
     vertical-align: middle;
     font-size: small;
 }
-#GameInfo{
+#gameBoard{
+    position: relative; 
+    width:100%;
+}
+#gameInfo{
     text-align: left;
+}
+#backToListButton{
+    width: 200px;
 }

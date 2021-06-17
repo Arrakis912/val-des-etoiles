@@ -87,7 +87,8 @@ export class QueryManager{
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'joinGame', name: window.STARNAME, game}),(res)=>{
             document.getElementById("gameListPage").style.display = 'none';
             document.getElementById("gameInfo").textContent = `Bienvenu sur le Val, ${window.STARNAME}. Nous attendons votre adversaire.`;
-            document.getElementById("gameBoard").style.display = 'block';
+            document.getElementById("gameBoard").style.display = 'flex';
+            document.getElementById("gameBoard").style.flexDirection = 'column';
             console.log('joinedGame!');
             window.GAMENAME = game;
             window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
@@ -104,7 +105,8 @@ export class QueryManager{
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'createGame', name: window.STARNAME, game:gameName}),(res)=>{
             document.getElementById("gameListPage").style.display = 'none';
             document.getElementById("gameInfo").textContent = `Bienvenu sur le Val, ${window.STARNAME}. Nous attendons votre adversaire.`;
-            document.getElementById("gameBoard").style.display = 'block';
+            document.getElementById("gameBoard").style.display = 'flex';
+            document.getElementById("gameBoard").style.flexDirection = 'column';
             console.log('madeGame!');
             window.GAMENAME = gameName;
             window.playerIsActive = false;
