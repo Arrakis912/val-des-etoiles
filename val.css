@@ -5,6 +5,8 @@ body{
     --card-width: 40px;
     --card-border-size: 3px;
     --card-margin: 1px;
+    --card-height-with-border: calc(var(--card-height) + (2 * (var(--card-border-size) + var(--card-margin))));
+    --card-width-with-border: calc(var(--card-width) + (2 * (var(--card-border-size) + var(--card-margin))));
 }
 .dying{
     border: var(--card-border-size) solid red;
@@ -39,4 +41,18 @@ label{
 }
 #backToListButton{
     width: 200px;
+}
+#Source{
+    height:var(--card-height); 
+    width:var(--card-width);
+    border: var(--card-border-size) solid cyan;
+    margin: var(--card-margin);
+    font-size:large;
+}
+.rayCount{
+    height:var(--card-height); 
+    width:var(--card-width);
+    border: var(--card-border-size) solid gray;
+    margin: var(--card-margin);
+    font-size:large;
 }

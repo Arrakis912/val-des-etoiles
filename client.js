@@ -5,7 +5,7 @@ const CARDWIDTH = 40;
 const CARDBORDER = 4;
 const CARDHEIGHTWITHBORDER = CARDHEIGHT + (2*CARDBORDER);
 const CARDWIDTHWITHBORDER = CARDWIDTH + (2*CARDBORDER);
-let SOURCEPOSITION = [5*CARDHEIGHTWITHBORDER,5]
+let SOURCEPOSITION = [5*CARDHEIGHTWITHBORDER,0]
 
 function updateUIInterval(){
     if (window.UPDATEUI) {
@@ -115,7 +115,7 @@ function clickCard(cardId, value, color){
         const creatureId = parseInt(rootName.substring(9));
         const aspect = cardElem.getAttribute('aspect');
         const isOp = root.parentElement.parentElement.getAttribute('id').startsWith('Op');
-        console.log(`clicked on card ${cardId}, ${aspect} in ${isOp?'opposing':'player'} creature ${rootName}`);
+        console.log(`clicked on card ${cardId}, ${aspect} in ${isOp?'opposing':'player'} creature ${creatureId}`);
         if(window.UIState === "searchTarget"){
             if(window.selectedCard === cardId){
                 selectCard(cardElem, cardId);//Actually unselect, but it is the same function
@@ -188,6 +188,7 @@ function clickGameButtonSkip(){
         if(game.players[game.activePlayer].hasSpectre){
             window.UIState = "endingTurn";
             console.log(`ending turn... where to draw?`);
+            replaceInfoLine("Ending Turn, click river or source to choose where to draw")
         } else {
             sendMove({type:"endPhase"});
         }
@@ -252,6 +253,11 @@ function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     return line;
 }
 
+function replaceInfoLine(message){
+    let line = document.getElementById('GameInfo');
+    line.innerHTML = message;
+}
+
 function makeButtonLine(gameStatus, playerIndex, playerIsActive){
     let line = document.createElement('div');
     line.setAttribute('id','GameButtons');
@@ -265,7 +271,7 @@ function makeButtonLine(gameStatus, playerIndex, playerIsActive){
                 line.appendChild(makeButton("educateButton", "Eduquer", clickEducateButton));
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
-            line.appendChild(makeButton("skipRevealButton", "Passer Révélation", ()=>{
+            line.appendChild(makeButton("skipRevealButton", "Skip Reveal", ()=>{
                 sendMove({type:"resolveMultiAction", action: "skip"});
             }));
         }
@@ -314,7 +320,6 @@ function makeSource(cardsLeft){
     source.setAttribute('id', 'Source');
     source.innerHTML = `${cardsLeft} cards`;
     source.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px`;
-    source.classList.add('card');
     source.addEventListener('click', clickSource);
     return source;
 }
@@ -322,7 +327,7 @@ function makeSource(cardsLeft){
 function makeRiver(gameStatus){
     let river = document.createElement('div');
     river.setAttribute('id','River');
-    river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDWIDTH}px; display: flex;`;
+    river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDHEIGHTWITHBORDER}px; display: flex;`;
     gameStatus.river.forEach(card=>{
         river.appendChild(makeCard(card));
     });
@@ -352,7 +357,7 @@ function makePlayerHand(gameStatus, playerId, isOp){
 function makeRayLabel(gameStatus, playerId, isOp){
     let rayLabel = document.createElement('label');
     rayLabel.setAttribute('id', `${isOp?"Op":""}RayLabel`);
-    rayLabel.style = `height:${CARDHEIGHTWITHBORDER}px; width:${CARDWIDTHWITHBORDER}px; font-size:large`;
+    rayLabel.classList.add('rayCount');
     rayLabel.innerHTML = `Ray : ${gameStatus.players[playerId].ray}`;
     rayLabel.addEventListener('click',()=>{
         if (window.playerIsActive) {
