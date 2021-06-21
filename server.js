@@ -198,6 +198,8 @@ class Creature{
                     revealCount-=1;
                     if(revealCount > 0 || owner.hasSpectre){
                         game.interrupt({type:"multiAction", drawCount, revealCount, isDN:(this.type === "dame noire")});
+                    } else {
+                        game.activePlayerDraw("source", drawCount);
                     }
                 } else {
                     return `unrecognised target type ${target.type}`
@@ -263,6 +265,13 @@ class Creature{
         ['heart','weapon','power','spirit'].forEach(aspect => {
             if (this[aspect] !== undefined){
                 this[aspect].visibility = "None";
+            }
+        }, this);
+    }
+    revealAspects(){
+        ['heart','weapon','power','spirit'].forEach(aspect => {
+            if (this[aspect] !== undefined){
+                this[aspect].visibility = "Active";
             }
         }, this);
     }
@@ -332,6 +341,7 @@ class Creature{
                 this.head = undefined;
             }
             if(!this.endOfBurial()){
+                this.revealAspects();
                 game.setGameStateToKillingCreature(this);
             }
         }
@@ -355,6 +365,8 @@ class Creature{
             if (cardsStillHere.length == 1) {
                 this.buryCard(cardsStillHere[0]);
             }
+            let owner = this.getOwner();
+            owner.creatures = owner.creatures.filter((elem)=>(elem.id !== this.id), this)
             return true;
         }
     }
@@ -616,9 +628,9 @@ class PlayerStatus{
                 } else if (target.type === "creature"){
                     let creature = undefined;
                     if(!target.isOp){
-                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
-                        creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
                     }
                     if(creature === undefined){
                         return 'unable to find target creature';
@@ -641,7 +653,7 @@ class PlayerStatus{
                     return `cannot use spirit on own star or creatures`;
                 }
                 if(target.type === "creature"){
-                    let creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                    let creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
                     if(creature === undefined){
                         return 'unable to find target creature'
                     }
@@ -670,19 +682,15 @@ class PlayerStatus{
                 } else if (target.type === "creature"){
                     let creature = undefined;
                     if(!target.isOp){
-                        creature = this.hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.creatures.find((elem)=> elem.id === target.creatureId);
                     } else {
-                        creature = this.getOpponent().hand.find((elem)=> elem.id === target.creatureId);
+                        creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
                     }
                     if(creature === undefined){
                         return 'unable to find target creature';
                     }
                     errorState = creature.revealCard(target.aspect, this.name);
-                    if(this.hasSpectre){
-                        game.interrupt({type:"multiAction", drawCount, revealCount:0});
-                    } else {
-                        game.activePlayerDraw("source", drawCount);
-                    }
+                    game.interrupt({type:"multiAction", drawCount, revealCount:0, attack:true});
                 } else {
                         return `unrecognised target type ${target.type}`;
                 }
