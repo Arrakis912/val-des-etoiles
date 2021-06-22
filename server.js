@@ -79,6 +79,9 @@ class Creature{
         return gameList.find((game)=>game.name===this.game);
     }
     useAspect(aspect, target){
+        if(this.resting){
+            return `tried acting with a creature that already did this turn`;
+        }
         let initialyHadCard = (this[aspect] !== undefined);
         const owner = this.getOwner();
         if(initialyHadCard){
@@ -732,6 +735,7 @@ class PlayerStatus{
         }
         this.obtainCard(creature[target.aspect]);
         creature[target.aspect] = card;
+        this.hand = this.hand.filter((elem)=>(elem.id !== card.id));
         //TODO : validity checks
         return 'ok'
     }
