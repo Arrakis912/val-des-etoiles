@@ -220,6 +220,7 @@ class Creature{
         this.damage = {heart:0, power:0};
         this.magicienMarks = 0;
         this.butcherMark = false;
+        this.unRevealAspects();
     }
 
     revealCard(color, forWho="Active"){
@@ -232,6 +233,8 @@ class Creature{
             console.log('revealing already revealed card : do nothing');
             return 'ok'
         }
+        let game = this.getGame();
+        game.revealedCards.append();
         card.visibility = forWho;
         if(forWho !== this.owner){
             if (card.value === 'J') {
@@ -493,10 +496,10 @@ class PlayerStatus{
         card.visibility = 'Owner';
         card.attachedTo = this.name;
     }
-    unRevealAll(){
-        this.creatures.forEach((creature)=>{
-            creature.unRevealAspects();
-        })
+    restAll(){
+        this.creatures.forEach(creature=>{
+            creature.rest()
+        });
     }
     hasSpectreAtPosition(){
         return this.creatures.findIndex((creature)=>{
@@ -786,6 +789,7 @@ class GameStatus{
         this.phase = -1;
         this.summary = [];
         this.interuptionObject = undefined;
+        this.revealedCards = [];
     }
 
     setGameStateToKillingCreature(creature){
@@ -954,9 +958,12 @@ class GameStatus{
                     //draw card
                     this.activePlayerDraw(moveDescription.drawFrom);
                     //set active player to next player and restart turn, and unreveal all revealed cards of both
-                    this.players[this.activePlayer].unRevealAll();
+                    this.players[this.activePlayer].restAll();
                     this.activePlayer = (this.activePlayer + 1)%this.players.length;
-                    this.players[this.activePlayer].unRevealAll();
+                    this.revealedCards.forEach((card)=>{
+                        card.visibility = "None";
+                    })
+                    this.revealedCards = [];
                     this.phase = 0;
                 } else {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
