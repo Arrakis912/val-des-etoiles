@@ -390,13 +390,34 @@ function makeCard(card,base_revealed=true){
     let cardElem = document.createElement('label');
     cardElem.setAttribute('id',`Card_${card.id}`);
     cardElem.classList.add('card');
-    cardElem.innerHTML = revealed?`${card.value} of ${card.color}`:'Back';
+    cardElem.innerHTML = revealed?`${card.value} ${makeSymbolFromColor(card.color)}`:'Back';
+    if (card.color === 'sang' && revealed) {
+        cardElem.style.color = 'crimson';
+    }
     cardElem.addEventListener('click',()=>{
         if (window.playerIsActive) {
             clickCard(card.id, card.value, card.color);
         }
     });
     return cardElem;
+}
+
+function makeSymbolFromColor(color){
+    switch (color) {
+        case 'power':
+            return "♣";
+        case 'heart':
+            return "♥";
+        case 'spirit':
+            return "♦";
+        case 'weapon':
+            return "♠";
+        case 'sang':
+        case 'cendre':
+            return "☻";
+        default:
+            return '?';
+    }
 }
 
 function makeCreature(creature, isOp){
@@ -424,7 +445,7 @@ function makeCreature(creature, isOp){
         if (creature.spirit !== undefined) {
             spiritRow.appendChild(makeCreatureVoidFiller());
         }
-        if (creature.power !== undefined) {
+        if (creature['power'] !== undefined) {
             powerRow.appendChild(makeCreatureVoidFiller());
         }
     }
@@ -438,8 +459,8 @@ function makeCreature(creature, isOp){
         headCard.setAttribute('aspect',"head");
         mainRow.appendChild(headCard);
     }
-    if (creature.power !== undefined) {
-        const powerCard = makeCard(creature.power, false);
+    if (creature['power'] !== undefined) {
+        const powerCard = makeCard(creature['power'], false);
         powerCard.setAttribute('aspect',"power");
         powerRow.appendChild(powerCard);
     }
@@ -450,7 +471,7 @@ function makeCreature(creature, isOp){
         if (creature.spirit !== undefined) {
             spiritRow.appendChild(makeCreatureVoidFiller());
         }
-        if (creature.power !== undefined) {
+        if (creature['power'] !== undefined) {
             powerRow.appendChild(makeCreatureVoidFiller());
         }
     }

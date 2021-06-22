@@ -55,7 +55,7 @@ class Creature{
         this.heart = cards.heart;
         this.weapon = cards.weapon;
         this.spirit = cards.spirit;
-        this.power = cards.power;
+        this['power'] = cards['power'];
         this.type = this.computeType();
         this.resting = false;
         this.damage = {heart:0, power:0};
@@ -177,7 +177,7 @@ class Creature{
                         drawCount+=1;
                     }
                 }
-                if(this.power.value === 'J' && this.power.color === 'power'){
+                if(this['power'].value === 'J' && this['power'].color === 'power'){
                     drawCount+=1;
                     revealCount = drawCount;
                 }
@@ -233,8 +233,6 @@ class Creature{
             console.log('revealing already revealed card : do nothing');
             return 'ok'
         }
-        let game = this.getGame();
-        game.revealedCards.push(card);
         card.visibility = forWho;
         if(forWho !== this.owner){
             if (card.value === 'J') {
@@ -436,7 +434,7 @@ class Creature{
     computeType(){
         if (this.heart == undefined){
             if(this.weapon == undefined){
-                if(this.power != undefined){
+                if(this['power'] != undefined){
                     if(this.spirit != undefined){
                         if(this.owner === 'Vulcain' || this.owner === 'Pluton' || this.owner === 'Neptune' || this.owner === 'Uranus' || this.owner === 'Saturne' || this.owner === 'Jupiter' || this.owner === 'Mars' || this.owner === 'Venus' || this.owner === 'Mercure' || this.owner === 'Selene'){
                             return `damne`;
@@ -454,26 +452,26 @@ class Creature{
                     return undefined;
                 }
             } else {
-                if(this.power != undefined && this.spirit != undefined){
+                if(this['power'] != undefined && this.spirit != undefined){
                     return `spectre`;
                 } else {
                     return undefined;
                 }
             }
         } else {
-            if(this.weapon == undefined && this.power == undefined && this.spirit == undefined){
+            if(this.weapon == undefined && this['power'] == undefined && this.spirit == undefined){
                 return 'enfant';
             }
-            else if (this.weapon != undefined && this.power != undefined && this.spirit != undefined) {
+            else if (this.weapon != undefined && this['power'] != undefined && this.spirit != undefined) {
                 return 'accompli';
             }
-            else if (this.weapon != undefined && this.power != undefined && this.spirit == undefined) {
+            else if (this.weapon != undefined && this['power'] != undefined && this.spirit == undefined) {
                 return 'fou';
             }
-            else if (this.weapon != undefined && this.power == undefined && this.spirit != undefined) {
+            else if (this.weapon != undefined && this['power'] == undefined && this.spirit != undefined) {
                 return 'chevalier';
             }
-            else if (this.weapon == undefined && this.power != undefined && this.spirit != undefined) {
+            else if (this.weapon == undefined && this['power'] != undefined && this.spirit != undefined) {
                 return 'magicien';
             } else {
                 return undefined;
@@ -789,7 +787,6 @@ class GameStatus{
         this.phase = -1;
         this.summary = [];
         this.interuptionObject = undefined;
-        this.revealedCards = [];
     }
 
     setGameStateToKillingCreature(creature){
@@ -957,13 +954,14 @@ class GameStatus{
                 } else if (this.phase === 1){//end Turn
                     //draw card
                     this.activePlayerDraw(moveDescription.drawFrom);
-                    //set active player to next player and restart turn, and unreveal all revealed cards of both
+                    // unreveal all revealed cards of all players and rest creatures of active player, then switch active player
+                    this.players.forEach(player=>{
+                        player.creatures.forEach(creature=>{
+                            creature.unRevealAspects()
+                        })
+                    })
                     this.players[this.activePlayer].restAll();
                     this.activePlayer = (this.activePlayer + 1)%this.players.length;
-                    this.revealedCards.forEach((card)=>{
-                        card.visibility = "None";
-                    })
-                    this.revealedCards = [];
                     this.phase = 0;
                 } else {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};

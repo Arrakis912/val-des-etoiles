@@ -22,6 +22,7 @@ label{
     width: var(--card-width);
     border: var(--card-border-size) solid cyan;
     margin: var(--card-margin);
+    font-size:large;
 }
 .card.selected{
     border: var(--card-border-size) solid yellow;
@@ -38,6 +39,7 @@ label{
     width: var(--card-width);
     border: var(--card-border-size) solid cyan;
     margin: var(--card-margin);
+    font-size:large;
 }
 .creatorButton{
     height: var(--card-height);
