@@ -100,16 +100,16 @@ function clickCard(cardId, value, color){
         if(phase != 0){
             console.log('cant play card from hand outside of star phase')
         } else {//Star Phase
-            selectCard(cardElem, cardId);
             if(window.UIState === "educating"){
                 window.selectedFunction = (target)=>{
-                    sendMove({type:"educate",card : window.selectedCard, target});
+                    sendMove({type:"educate",card : cardId, target});
                 }
             } else {// Play Card : must select target
                 window.selectedFunction = (target)=>{
-                    sendMove({type:"useCard",card : window.selectedCard, target});
+                    sendMove({type:"useCard",card : cardId, target});
                 }
             }
+            selectCard(cardElem, cardId);
         }
     } else if(rootName.startsWith('Creature_')){
         const creatureId = parseInt(rootName.substring(9));
@@ -207,6 +207,7 @@ function clickCreateCreatureButton(){
 
 function clickEducateButton(){
     window.UIState = "educating";
+    replaceInfoLine("Educating, click card in hand then card in creature to replace")
 }
 
 function clickCancelMoveButton(){
@@ -236,7 +237,7 @@ function updateUI(){
     let gameBoard = document.getElementById("gameBoard");
     gameBoard.innerHTML='';
     gameBoard.appendChild(makeInfoLine(gameStatus,activePlayerName,playerIsActive));
-    gameBoard.appendChild(makeButtonLine(gameStatus, playerIndex, playerIsActive));
+    gameBoard.appendChild(makeButtonLine(gameStatus, playerIsActive));
     gameBoard.appendChild(makeField(gameStatus, opIndex, true));
     gameBoard.appendChild(makeSource(gameStatus.source.length));
     gameBoard.appendChild(makeRiver(gameStatus));
@@ -247,21 +248,19 @@ function updateUI(){
 
 function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     let line = document.createElement('label');
-    line.setAttribute('id','GameInfo');
-    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: 0px; left: 0px`;
+    line.setAttribute('id','gameInfo');
     line.innerHTML = `active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}`;
     return line;
 }
 
 function replaceInfoLine(message){
-    let line = document.getElementById('GameInfo');
+    let line = document.getElementById('gameInfo');
     line.innerHTML = message;
 }
 
-function makeButtonLine(gameStatus, playerIndex, playerIsActive){
+function makeButtonLine(gameStatus, playerIsActive){
     let line = document.createElement('div');
-    line.setAttribute('id','GameButtons');
-    line.style = `height: ${CARDHEIGHT/2}px; width: 100%; position: absolute; top: ${CARDHEIGHT/2}px; left: 0px; display:flex;`;
+    line.setAttribute('id','gameButtons');
     if(playerIsActive){
         line.appendChild(makeButton("cancelMoveButton", "Annuler", clickCancelMoveButton));
         if(gameStatus.phase === 0 || gameStatus.phase === 1){
@@ -284,7 +283,7 @@ function makeButton(id, text, callback){
     button.setAttribute('id',id);
     button.innerHTML = text;
     button.addEventListener('click', callback);
-    button.style = `height:${CARDHEIGHTWITHBORDER/2}px;width:${CARDWIDTH*3}px;`;
+    button.classList.add('gameButton');
     return button;
 }
 
@@ -317,9 +316,8 @@ function textInstruction(gameStatus){
 
 function makeSource(cardsLeft){
     let source = document.createElement('label');
-    source.setAttribute('id', 'Source');
+    source.setAttribute('id', 'source');
     source.innerHTML = `${cardsLeft} cards`;
-    source.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1]}px`;
     source.addEventListener('click', clickSource);
     return source;
 }
