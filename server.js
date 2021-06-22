@@ -234,7 +234,7 @@ class Creature{
             return 'ok'
         }
         let game = this.getGame();
-        game.revealedCards.append();
+        game.revealedCards.push(card);
         card.visibility = forWho;
         if(forWho !== this.owner){
             if (card.value === 'J') {
