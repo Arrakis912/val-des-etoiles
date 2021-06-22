@@ -7,9 +7,12 @@ body{
     --card-margin: 1px;
     --card-height-with-border: calc(var(--card-height) + (2 * (var(--card-border-size) + var(--card-margin))));
     --card-width-with-border: calc(var(--card-width) + (2 * (var(--card-border-size) + var(--card-margin))));
+    --info-line-height: calc(var(--card-height-with-border) / 2);
 }
-.dying{
-    border: var(--card-border-size) solid red;
+label{
+    text-align: center;
+    vertical-align: middle;
+    font-size: small;
 }
 .card{
     height: var(--card-height);
@@ -27,27 +30,45 @@ body{
     border: var(--card-border-size) solid black;
     margin: var(--card-margin);
 }
-label{
-    text-align: center;
-    vertical-align: middle;
-    font-size: small;
+.dying{
+    border: var(--card-border-size) solid red;
 }
 #gameBoard{
     position: relative; 
     width:100%;
 }
 #gameInfo{
+    height: var(--info-line-height);
     text-align: left;
+    width: 100%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+#gameButtons{
+    height: var(--info-line-height);
+    width: 100%;
+    position: absolute;
+    top: var(--info-line-height);
+    left: 0px;
+    display:flex;
+}
+.gameButton{
+    height: var(--info-line-height);
+    width: calc(3 * var(--card-width-with-border));
 }
 #backToListButton{
     width: 200px;
 }
-#Source{
+#source{
     height:var(--card-height); 
     width:var(--card-width);
     border: var(--card-border-size) solid cyan;
     margin: var(--card-margin);
     font-size:large;
+    position: absolute; 
+    top: calc(5 * var(--card-height-with-border)); 
+    left: 0px;
 }
 .rayCount{
     height:var(--card-height); 
