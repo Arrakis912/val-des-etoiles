@@ -1,12 +1,5 @@
 import { QueryManager } from "./clientQueryManager.js"
 
-const CARDHEIGHT = 40;
-const CARDWIDTH = 40;
-const CARDBORDER = 4;
-const CARDHEIGHTWITHBORDER = CARDHEIGHT + (2*CARDBORDER);
-const CARDWIDTHWITHBORDER = CARDWIDTH + (2*CARDBORDER);
-let SOURCEPOSITION = [5*CARDHEIGHTWITHBORDER,0]
-
 function updateUIInterval(){
     if (window.UPDATEUI) {
         updateUI();
@@ -152,7 +145,7 @@ function clickCard(cardId, value, color){
         } else {
             console.error(`no action defined for card in present phase and state`);
         }
-    } else if(rootName === 'River'){
+    } else if(rootName === 'river'){
         clickRiver();
     } else {
         console.error(`unknown root ${rootName} for clicked card ${cardId}`)
@@ -239,8 +232,7 @@ function updateUI(){
     gameBoard.appendChild(makeInfoLine(gameStatus,activePlayerName,playerIsActive));
     gameBoard.appendChild(makeButtonLine(gameStatus, playerIsActive));
     gameBoard.appendChild(makeField(gameStatus, opIndex, true));
-    gameBoard.appendChild(makeSource(gameStatus.source.length));
-    gameBoard.appendChild(makeRiver(gameStatus));
+    gameBoard.appendChild(makeRiver(gameStatus, gameStatus.source.length));
     gameBoard.appendChild(makeField(gameStatus, playerIndex, false));
     window.PREVIOUSGAMESTATUS = gameStatus;
     resetMoveVariables()
@@ -314,37 +306,34 @@ function textInstruction(gameStatus){
     }
 }
 
-function makeSource(cardsLeft){
+function makeRiver(gameStatus, cardsLeft){
+    let river = document.createElement('div');
     let source = document.createElement('label');
+    river.setAttribute('id','river');
     source.setAttribute('id', 'source');
     source.innerHTML = `${cardsLeft} cards`;
     source.addEventListener('click', clickSource);
-    return source;
-}
-
-function makeRiver(gameStatus){
-    let river = document.createElement('div');
-    river.setAttribute('id','River');
-    river.style=`position: absolute; top: ${SOURCEPOSITION[0]}px; left: ${SOURCEPOSITION[1] + CARDHEIGHTWITHBORDER}px; display: flex;`;
+    river.appendChild(source);
     gameStatus.river.forEach(card=>{
         river.appendChild(makeCard(card));
     });
     return river;
 }
 
-function makeField(gameStatus, playerId, isOpponent){
+function makeField(gameStatus, playerId, isOp){
     let field = document.createElement('div');
-    field.setAttribute('id', `${isOpponent?"Opponent":"Player"}`);
-    field.style = `height:${4*CARDHEIGHTWITHBORDER}px; position: absolute; top: ${(isOpponent?0:SOURCEPOSITION[0]) + CARDHEIGHTWITHBORDER}px; left: ${0}px`;
-    field.appendChild(makePlayerHand(gameStatus, playerId,isOpponent));
-    field.appendChild(makePlayerCreatures(gameStatus, playerId,isOpponent));
+    field.setAttribute('id', `${isOp?"Opponent":"Player"}`);
+    field.classList.add('field');
+    field.style = `flex-direction: column${isOp?"":"-reverse"};`;
+    field.appendChild(makePlayerHand(gameStatus, playerId,isOp));
+    field.appendChild(makePlayerCreatures(gameStatus, playerId,isOp));
     return field;
 }
 
 function makePlayerHand(gameStatus, playerId, isOp){
     let hand = document.createElement('div');
     hand.setAttribute('id', `${isOp?"Op":""}Hand`);
-    hand.style = `position: absolute; ${isOp?"top":"bottom"}: 0px; left: 0px; display: flex;`;
+    hand.classList.add('hand');
     hand.appendChild(makeRayLabel(gameStatus, playerId, isOp));
     gameStatus.players[playerId].hand.forEach(card => {
         hand.appendChild(makeCard(card, !isOp));
@@ -368,7 +357,7 @@ function makeRayLabel(gameStatus, playerId, isOp){
 function makePlayerCreatures(gameStatus, playerId, isOp){
     let versant = document.createElement('div');
     versant.setAttribute('id', `${isOp?"Op":""}Versant`);
-    versant.style = `position: absolute; height:${3*CARDHEIGHTWITHBORDER}px; ${isOp?"top":"bottom"}: ${CARDHEIGHTWITHBORDER}px; left: 0px; display: flex;`
+    versant.classList.add('versant');
     gameStatus.players[playerId].creatures.forEach(creature => {
         versant.appendChild(makeCreature(creature, isOp));
     });
@@ -475,19 +464,40 @@ function makeCreature(creature, isOp){
 function makeCreatureSlot(){
     let creatureElem = document.createElement('div');
     creatureElem.setAttribute('id','CreatureCreator');
-    creatureElem.style = `height: ${3*(CARDHEIGHTWITHBORDER)}px; width: ${3*(CARDWIDTHWITHBORDER)}px; position: relative;`;
     
-    const spiritSlot = makeSlot(CARDWIDTHWITHBORDER,0, false);
-    creatureElem.appendChild(spiritSlot);
-    const heartSlot = makeSlot(0,CARDHEIGHTWITHBORDER, false);
-    creatureElem.appendChild(heartSlot);
-    const headSlot = makeSlot(CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER);
-    creatureElem.appendChild(headSlot);
-    const weaponSlot = makeSlot(2*CARDWIDTHWITHBORDER,CARDHEIGHTWITHBORDER, false);
-    creatureElem.appendChild(weaponSlot);
-    const powerSlot = makeSlot(CARDWIDTHWITHBORDER,2*CARDHEIGHTWITHBORDER, false);
-    creatureElem.appendChild(powerSlot);
+    let spiritRow = document.createElement('div');
+    spiritRow.classList.add("CreatureCreatorRow");
+    let mainRow = document.createElement('div');
+    mainRow.classList.add("CreatureCreatorRow");
+    let powerRow = document.createElement('div');
+    powerRow.classList.add("CreatureCreatorRow");
     
+    const heartSlot = makeSlot();
+    heartSlot.setAttribute('aspect',"heart");
+    
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "KO", ()=>{
+        window.UIState = "none";
+        creatureElem.remove();
+    })
+    cancelCreatureButton.classList.remove("gameButton");
+    cancelCreatureButton.classList.add("creatorButton");
+
+    spiritRow.appendChild(cancelCreatureButton);
+    mainRow.appendChild(heartSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
+    
+    const spiritSlot = makeSlot();
+    spiritSlot.setAttribute('aspect',"spirit");
+    const headSlot = makeSlot();
+    headSlot.setAttribute('aspect',"head");
+    const powerSlot = makeSlot();
+    powerSlot.setAttribute('aspect',"power");
+    spiritRow.appendChild(spiritSlot);
+    mainRow.appendChild(headSlot);
+    powerRow.appendChild(powerSlot);
+    
+    const weaponSlot = makeSlot();
+    weaponSlot.setAttribute('aspect',"weapon");
     let validateCreatureButton = makeButton("validateCreatureButton", "OK", ()=>{
         window.UIState = "none";
         sendMove({
@@ -501,23 +511,22 @@ function makeCreatureSlot(){
             }
         });
     })
-    validateCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: ${2*CARDWIDTHWITHBORDER}px`;
-    creatureElem.appendChild(validateCreatureButton);
+    validateCreatureButton.classList.remove("gameButton");
+    validateCreatureButton.classList.add("creatorButton");
 
-    let cancelCreatureButton = makeButton("cancelCreatureButton", "KO", ()=>{
-        window.UIState = "none";
-        creatureElem.remove();
-    })
-    cancelCreatureButton.style = `height:${CARDHEIGHT}px;width:${CARDWIDTH}px; position: absolute; top: 0px; left: 0px`;
-    creatureElem.appendChild(cancelCreatureButton);
+    spiritRow.appendChild(validateCreatureButton);
+    mainRow.appendChild(weaponSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
 
+    creatureElem.appendChild(spiritRow);
+    creatureElem.appendChild(mainRow);
+    creatureElem.appendChild(powerRow);
     return creatureElem;
 }
 
-function makeSlot(left,top){
+function makeSlot(){
     let slotElem = document.createElement('label');
-    slotElem.classList.add('card');
-    slotElem.style = `height: ${CARDHEIGHT}px; width: ${CARDWIDTH}px; position: absolute; top: ${top}px; left: ${left}px`;
+    slotElem.classList.add('slot');
     slotElem.innerHTML = 'Slot';
     slotElem.addEventListener('click',()=>{
         console.log(`clicked slot ${slotElem.getAttribute('aspect')}`);

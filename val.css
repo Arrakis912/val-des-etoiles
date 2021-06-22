@@ -8,6 +8,9 @@ body{
     --card-height-with-border: calc(var(--card-height) + (2 * (var(--card-border-size) + var(--card-margin))));
     --card-width-with-border: calc(var(--card-width) + (2 * (var(--card-border-size) + var(--card-margin))));
     --info-line-height: calc(var(--card-height-with-border) / 2);
+    --creature-height: calc(3 * var(--card-height-with-border));
+    --creature-width: calc(3 * var(--card-width-with-border));
+    --source-top: calc(5 * var(--card-height));
 }
 label{
     text-align: center;
@@ -30,45 +33,76 @@ label{
     border: var(--card-border-size) solid black;
     margin: var(--card-margin);
 }
+.slot{
+    height: var(--card-height);
+    width: var(--card-width);
+    border: var(--card-border-size) solid cyan;
+    margin: var(--card-margin);
+}
+.creatorButton{
+    height: var(--card-height);
+    width: var(--card-width);
+    margin: calc(var(--card-margin) + var(--card-border-size));
+}
 .dying{
     border: var(--card-border-size) solid red;
 }
 #gameBoard{
     position: relative; 
     width:100%;
+    display:flex;
+    flex-direction: column;
 }
 #gameInfo{
     height: var(--info-line-height);
     text-align: left;
     width: 100%;
-    position: absolute;
-    top: 0px;
-    left: 0px;
 }
 #gameButtons{
     height: var(--info-line-height);
     width: 100%;
-    position: absolute;
-    top: var(--info-line-height);
-    left: 0px;
     display:flex;
 }
 .gameButton{
     height: var(--info-line-height);
-    width: calc(3 * var(--card-width-with-border));
+    width: var(--creature-width);
 }
 #backToListButton{
     width: 200px;
 }
+#CreatureCreator{
+    height: var(--creature-height);
+    width: var(--creature-width);
+    display:flex;
+    flex-direction: column;
+}
+.CreatureCreatorRow{
+    display: flex; 
+    flex-direction: row;
+}
 #source{
-    height:var(--card-height); 
+    height:var(--card-height);
     width:var(--card-width);
     border: var(--card-border-size) solid cyan;
     margin: var(--card-margin);
     font-size:large;
-    position: absolute; 
-    top: calc(5 * var(--card-height-with-border)); 
-    left: 0px;
+}
+#river{
+    height:var(--card-height-with-border);
+    display: flex;
+    margin: 5px;
+}
+.field{
+    display : flex;
+}
+.versant{
+    display : flex;
+    height: var(--creature-height);
+}
+.hand{
+    display : flex;
+    height: var(--card-height-with-border);
+    margin: 5px;
 }
 .rayCount{
     height:var(--card-height); 
