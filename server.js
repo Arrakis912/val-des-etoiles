@@ -509,13 +509,13 @@ class PlayerStatus{
             return creature.heart !== undefined;
         })
     }
-    makeCreature(cardPositions){
+    makeCreature(pattern){
         let cardIndexes = {};
         let cards = {};
         ['head', 'heart', 'weapon', 'spirit', 'power'].forEach(elem => {
-            cardIndexes[elem] = (cardPositions[elem] === null)?-2:this.hand.findIndex((card)=>card.id === cardPositions[elem]);
+            cardIndexes[elem] = (pattern[elem] === null)?-2:this.hand.findIndex((card)=>card.id === pattern[elem]);
             if (cardIndexes[elem] === -1) {
-                console.error(`card ${cardPositions[elem]} for aspect ${elem} not in hand to create creature`)
+                console.error(`card ${pattern[elem]} for aspect ${elem} not in hand to create creature`)
                 return "error, missing card in hand for creature"
             }
             cards[elem] = this.hand[cardIndexes[elem]]
@@ -524,32 +524,30 @@ class PlayerStatus{
         if(creature.id === -1){
             console.error(`Creating invalid creature`);
             return "invalid creature";
-        } else {
-            this.creatures.forEach((prevCreature)=>{
-                if(prevCreature.type === creature.type){
-                    return 'creature of same type as previous creature';
-                };
-            });
-            if(creature.type === "damne"){
-                console.error(`Can't directly create : damne`);
-                return "Can't directly create : damne";
-            }
-            this.creatures.push(creature);
-            if(creature.type === "spectre"){
-                this.damage(5);
-                this.hasSpectre = true;
-            }
-            ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((aspect)=>{
-                if(creature[aspect]!==undefined){
-                    creature[aspect].attachedTo = creature.id;
-                }
-            })
-            creature.unRevealAspects();
-            creature.head.visibility = "Active";
-            this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
-            return "ok"
-            
         }
+        this.creatures.forEach((prevCreature)=>{
+            if(prevCreature.type === creature.type){
+                return 'creature of same type as previous creature';
+            };
+        });
+        if(creature.type === "damne"){
+            console.error(`Can't directly create : damne`);
+            return "Can't directly create : damne";
+        }
+        this.creatures.push(creature);
+        if(creature.type === "spectre"){
+            this.damage(5);
+            this.hasSpectre = true;
+        }
+        ['head', 'heart', 'weapon', 'spirit', 'power'].forEach((aspect)=>{
+            if(creature[aspect]!==undefined){
+                creature[aspect].attachedTo = creature.id;
+            }
+        })
+        creature.unRevealAspects();
+        creature.head.visibility = "Active";
+        this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
+        return "ok"
     }
 
     playArcane(cardId, target){
@@ -741,6 +739,55 @@ class PlayerStatus{
         return 'ok'
     }
 
+    addToCreature(pattern, target){
+        let cardIndexes = {};
+        let cards = {};
+        ['head', 'heart', 'weapon', 'spirit', 'power'].forEach(elem => {
+            cardIndexes[elem] = (pattern[elem] === null)?-2:this.hand.findIndex((card)=>card.id === pattern[elem]);
+            if (cardIndexes[elem] === -1) {
+                console.error(`card ${pattern[elem]} for aspect ${elem} not in hand to create creature`)
+                return "error, missing card in hand for education"
+            }
+            if(cardIndexes[elem]>=0){
+                cards[elem] = this.hand[cardIndexes[elem]]
+            }
+        }, this);
+        let creature = this.creatures.find(elem=>(elem.id === target.creatureId));
+        if(creature.id === undefined){
+            return "unable to find targetted creature";
+        } 
+        if(creature.isSpectral() && (pattern.heart !== null)){
+            return "Can't add heart to a specter";
+        }
+        let elemsToAdd = Object.keys(cards);
+        elemsToAdd.forEach(elem=>{
+            if(creature[elem] !== undefined){
+                return 'trying to add aspect already present in creature'
+            }
+        })
+        elemsToAdd.forEach(elem=>{
+            creature[elem] = cards[elem];
+        })
+        creature.type = creature.computeType();
+        if(creature.type === undefined){
+            elemsToAdd.forEach(elem=>{
+                creature[elem] = undefined;
+            })
+            return 'invalid education'
+        }
+        if(creature.isSpectral()){
+            this.damage(5);
+            this.hasSpectre = true;
+        }
+        elemsToAdd.forEach((aspect)=>{
+            creature[aspect].attachedTo = creature.id;
+        })
+        creature.unRevealAspects();
+        creature.head.visibility = "Active";
+        this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
+        return "ok"
+    }
+
     removeCardsFromHand(indexList){
         let filteredIndexList = indexList.filter((index)=>{
             return index>=0;
@@ -909,12 +956,24 @@ class GameStatus{
                 }
                 break;
             }
+            case "addToCreature":{
+                if (this.phase != 0) {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                }
+                this.phase = 1;
+                const returnMessage = this.players[playerId].addToCreature(moveDescription.pattern, moveDescription.target);
+                if(returnMessage !== "ok"){
+                    this.phase = 0;
+                    return {status: "KO", error : returnMessage}
+                }
+                return {status:"KO", error : "not implemented"}
+            }
             case "makeCreature":{
                 if (this.phase != 0) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
                 this.phase = 1;
-                const returnMessage = this.players[playerId].makeCreature(moveDescription.cardPositions);
+                const returnMessage = this.players[playerId].makeCreature(moveDescription.pattern);
                 if(returnMessage !== "ok"){
                     this.phase = 0;
                     return {status: "KO", error : returnMessage}

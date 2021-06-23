@@ -1,7 +1,7 @@
 body{
-    background-color: black;
-    color: cyan;
-    --card-height: 40px;
+    background-color: teal;
+    color: whitesmoke;
+    --card-height: 45px;
     --card-width: 40px;
     --card-border-size: 3px;
     --card-margin: 1px;
@@ -20,7 +20,9 @@ label{
 .card{
     height: var(--card-height);
     width: var(--card-width);
-    border: var(--card-border-size) solid cyan;
+    background-color: white;
+    color: black;
+    border: var(--card-border-size) solid black;
     margin: var(--card-margin);
     font-size:large;
 }
@@ -31,8 +33,7 @@ label{
 .creatureVoidFiller{
     height: var(--card-height);
     width: var(--card-width);
-    border: var(--card-border-size) solid black;
-    margin: var(--card-margin);
+    margin: calc(var(--card-margin) + var(--card-border-size));
 }
 .slot{
     height: var(--card-height);
@@ -85,7 +86,9 @@ label{
 #source{
     height:var(--card-height);
     width:var(--card-width);
-    border: var(--card-border-size) solid cyan;
+    background-color: cyan;
+    color:black;
+    border: var(--card-border-size) solid black;
     margin: var(--card-margin);
     font-size:large;
 }
@@ -109,7 +112,9 @@ label{
 .rayCount{
     height:var(--card-height); 
     width:var(--card-width);
-    border: var(--card-border-size) solid gray;
+    border: var(--card-border-size) solid red;
+    color: red;
     margin: var(--card-margin);
+    background-color: yellow;
     font-size:large;
 }

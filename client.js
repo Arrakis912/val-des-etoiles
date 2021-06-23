@@ -203,6 +203,15 @@ function clickEducateButton(){
     replaceInfoLine("Educating, click card in hand then card in creature to replace")
 }
 
+function clickEducAddButton(){
+    if(!(window.UIState === "addToCreature")){
+        let versant = document.getElementById('Versant');
+        window.UIState = "none";
+        versant.appendChild(makeEducAddCreatureSlot());
+        window.UIState = "addToCreature";
+    }
+}
+
 function clickCancelMoveButton(){
     updateUI();
 }
@@ -260,6 +269,7 @@ function makeButtonLine(gameStatus, playerIsActive){
             if(gameStatus.phase === 0){
                 line.appendChild(makeButton("createCreatureButton", "Engendrer", clickCreateCreatureButton));
                 line.appendChild(makeButton("educateButton", "Eduquer", clickEducateButton));
+                line.appendChild(makeButton("educateAddButton", "Ajout", clickEducAddButton));
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
             line.appendChild(makeButton("skipRevealButton", "Skip Reveal", ()=>{
@@ -390,8 +400,10 @@ function makeCard(card,base_revealed=true){
     let cardElem = document.createElement('label');
     cardElem.setAttribute('id',`Card_${card.id}`);
     cardElem.classList.add('card');
-    cardElem.innerHTML = revealed?`${card.value} ${makeSymbolFromColor(card.color)}`:'Back';
-    if (card.color === 'sang' && revealed) {
+    cardElem.innerHTML = revealed?`${card.value} <br> ${makeSymbolFromColor(card.color)}`:'Back';
+    if(!revealed){
+        cardElem.style.backgroundColor = 'cyan';
+    } else if (card.color === 'sang' || card.color === 'spirit' || card.color === 'heart') {
         cardElem.style.color = 'crimson';
     }
     cardElem.addEventListener('click',()=>{
@@ -523,7 +535,7 @@ function makeCreatureSlot(){
         window.UIState = "none";
         sendMove({
             type: "makeCreature",
-            cardPositions:{
+            pattern:{
                 "head":parseInt(headSlot.hasAttribute('card')?headSlot.getAttribute('card'):undefined),
                 "heart":parseInt(heartSlot.hasAttribute('card')?heartSlot.getAttribute('card'):undefined),
                 "weapon":parseInt(weaponSlot.hasAttribute('card')?weaponSlot.getAttribute('card'):undefined),
@@ -531,7 +543,76 @@ function makeCreatureSlot(){
                 "power":parseInt(powerSlot.hasAttribute('card')?powerSlot.getAttribute('card'):undefined)
             }
         });
+    });
+    validateCreatureButton.classList.remove("gameButton");
+    validateCreatureButton.classList.add("creatorButton");
+
+    spiritRow.appendChild(validateCreatureButton);
+    mainRow.appendChild(weaponSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
+
+    creatureElem.appendChild(spiritRow);
+    creatureElem.appendChild(mainRow);
+    creatureElem.appendChild(powerRow);
+    return creatureElem;
+}
+
+
+function makeEducAddCreatureSlot(){
+    let creatureElem = document.createElement('div');
+    creatureElem.setAttribute('id','CreatureCreator');
+    
+    let spiritRow = document.createElement('div');
+    spiritRow.classList.add("CreatureCreatorRow");
+    let mainRow = document.createElement('div');
+    mainRow.classList.add("CreatureCreatorRow");
+    let powerRow = document.createElement('div');
+    powerRow.classList.add("CreatureCreatorRow");
+    
+    const heartSlot = makeSlot();
+    heartSlot.setAttribute('aspect',"heart");
+    
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "KO", ()=>{
+        window.UIState = "none";
+        creatureElem.remove();
     })
+    cancelCreatureButton.classList.remove("gameButton");
+    cancelCreatureButton.classList.add("creatorButton");
+
+    spiritRow.appendChild(cancelCreatureButton);
+    mainRow.appendChild(heartSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
+    
+    const spiritSlot = makeSlot();
+    spiritSlot.setAttribute('aspect',"spirit");
+    const headSlot = makeSlot();
+    headSlot.setAttribute('aspect',"head");
+    const powerSlot = makeSlot();
+    powerSlot.setAttribute('aspect',"power");
+    spiritRow.appendChild(spiritSlot);
+    mainRow.appendChild(headSlot);
+    powerRow.appendChild(powerSlot);
+    
+    const weaponSlot = makeSlot();
+    weaponSlot.setAttribute('aspect',"weapon");
+    let validateCreatureButton = makeButton("validateCreatureButton", "OK", ()=>{
+        window.UIState = "searchTarget";
+        replaceInfoLine('Apply education pattern to a creature : click on creature');
+        window.selectedFunction = (target)=>{
+            window.UIState = "none";
+            sendMove({
+                type: "addToCreature",
+                target,
+                pattern:{
+                    "head":parseInt(headSlot.hasAttribute('card')?headSlot.getAttribute('card'):undefined),
+                    "heart":parseInt(heartSlot.hasAttribute('card')?heartSlot.getAttribute('card'):undefined),
+                    "weapon":parseInt(weaponSlot.hasAttribute('card')?weaponSlot.getAttribute('card'):undefined),
+                    "spirit":parseInt(spiritSlot.hasAttribute('card')?spiritSlot.getAttribute('card'):undefined),
+                    "power":parseInt(powerSlot.hasAttribute('card')?powerSlot.getAttribute('card'):undefined)
+                }
+            });
+        }
+    });
     validateCreatureButton.classList.remove("gameButton");
     validateCreatureButton.classList.add("creatorButton");
 
