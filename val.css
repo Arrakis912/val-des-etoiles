@@ -28,7 +28,7 @@ label{
 }
 .card.selected{
     border: var(--card-border-size) solid yellow;
-    background-color: crimson;
+    background-color: lightsalmon;
 }
 .creatureVoidFiller{
     height: var(--card-height);
