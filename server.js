@@ -1183,7 +1183,7 @@ class GameStatus{
 }
 
 let playerList = [];
-let gameList = [new GameStatus('defaultGameTest')];
+let gameList = [];
 
 const server = http.createServer((req, res) => {
     const { headers, method, url } = req;
@@ -1236,8 +1236,9 @@ function processQuery(url, method, body){
         case "createGame":{
             const starName = body.name;
             const gameName = body.game;
+            const ruleSet = body.ruleSet;
             if(gameList.findIndex((elem)=>elem.name===gameName) === -1){
-                game = addGame(gameName);
+                game = addGame(gameName, ruleSet);
             }
             joinGame(gameName, starName);
             break;
@@ -1310,8 +1311,8 @@ function removePlayer(name){
     console.log(`removing player : ${name}`)
 }
 
-function addGame(name){
-    game = new GameStatus(name);
+function addGame(name, ruleSet){
+    game = new GameStatus(name, ruleSet);
     gameList.push(game);
     console.log(`creating game : ${name}`)
 }

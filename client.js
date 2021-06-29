@@ -17,7 +17,9 @@ function connect(){
 }
 
 function makeNewGame(){
-    QueryManager.makeGameRequest();
+    const ruleSet = document.getElementById('input_ruleSet').value;
+    const gameName = document.getElementById('input_gameName').value;
+    QueryManager.makeGameRequest(gameName, ruleSet);
 }
 
 function backToList(){
@@ -200,10 +202,11 @@ function clickCreateCreatureButton(){
 
 function clickEducateButton(){
     window.UIState = "educating";
-    replaceInfoLine("Educating, click card in hand then card in creature to replace")
+    replaceInfoLine("Educating : click card in hand then card in creature to replace")
 }
 
 function clickEducAddButton(){
+    replaceInfoLine("Educating : place added cards in layout, validate, and then click on creature where they should be added")
     if(!(window.UIState === "addToCreature")){
         let versant = document.getElementById('Versant');
         window.UIState = "none";
@@ -301,7 +304,7 @@ function textInstruction(gameStatus){
             } else if (type === "victory") {
                 return `${(gameStatus.interuptionObject.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interuptionObject.winner+" a gagné")}`
             } else if (type === "multiAction") {
-                return "Action Multiple : clicker sur la rivière ou la source pour y piocher, ou sur la prochaine carte ciblée pour révéler/attacker (le joker de cendre révèle PUIS attaque)"
+                return "Action Multiple : click rivière/source : piocher // click carte : révéler/attacker (le joker de cendre révèle PUIS attaque)"
             }
             return `Tour interrompu : type d'interruption non reconnue ${type}`;
         }
@@ -435,7 +438,8 @@ function makeSymbolFromColor(color){
 function makeCreature(creature, isOp){
     let creatureElem = document.createElement('div');
     creatureElem.setAttribute('id', `Creature_${creature.id}`);
-    creatureElem.style = `display: flex; flex-direction: column${isOp?"-reverse":""};`;
+    creatureElem.classList.add('creature');
+    creatureElem.style = `flex-direction: column${isOp?"-reverse":""};`;
     if(creature.type === undefined){
         creatureElem.classList.add('dying');
     }

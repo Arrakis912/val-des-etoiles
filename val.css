@@ -11,6 +11,7 @@ body{
     --creature-height: calc(3 * var(--card-height-with-border));
     --creature-width: calc(3 * var(--card-width-with-border));
     --source-top: calc(5 * var(--card-height));
+    --creature-margin: 5px;
 }
 label{
     text-align: center;
@@ -29,6 +30,10 @@ label{
 .card.selected{
     border: var(--card-border-size) solid yellow;
     background-color: lightsalmon;
+}
+.creature{
+    display: flex;
+    margin-right: var(--creature-margin);
 }
 .creatureVoidFiller{
     height: var(--card-height);

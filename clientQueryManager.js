@@ -96,13 +96,13 @@ export class QueryManager{
         });
     }
 
-    static makeGameRequest(){
+    static makeGameRequest(name, ruleSet){
         if(window.STARNAME === undefined){
             console.error(`star undefined, can't make game`)
             return;
         }
-        const gameName = `val de ${window.STARNAME}`;
-        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'createGame', name: window.STARNAME, game:gameName}),(res)=>{
+        const gameName = name?name:`val de ${window.STARNAME}`;
+        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'createGame', name: window.STARNAME, game:gameName, ruleSet}),(res)=>{
             document.getElementById("gameListPage").style.display = 'none';
             document.getElementById("gameInfo").textContent = `Bienvenu sur le Val, ${window.STARNAME}. Nous attendons votre adversaire.`;
             document.getElementById("gameBoard").style.display = 'flex';
