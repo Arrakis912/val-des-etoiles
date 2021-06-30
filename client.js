@@ -400,15 +400,19 @@ function makeCard(card,base_revealed=true){
         default:
             console.log(`unrecognised visibility value ${card.visibility} in card ${card.id}, must be an opponent peaking at card`);
     }
-    let cardElem = document.createElement('label');
+    let cardElem;
+    if (revealed) {
+        cardElem = document.createElement('label');
+        cardElem.innerHTML = `${card.value} <br> ${makeSymbolFromColor(card.color)}`;
+        if (card.color === 'sang' || card.color === 'spirit' || card.color === 'heart') {
+            cardElem.style.color = 'crimson';
+        }
+    } else {
+        cardElem = document.createElement('img');
+        cardElem.setAttribute('src',"images/dos_carte.jpg");
+    }
     cardElem.setAttribute('id',`Card_${card.id}`);
     cardElem.classList.add('card');
-    cardElem.innerHTML = revealed?`${card.value} <br> ${makeSymbolFromColor(card.color)}`:'Back';
-    if(!revealed){
-        cardElem.style.backgroundColor = 'cyan';
-    } else if (card.color === 'sang' || card.color === 'spirit' || card.color === 'heart') {
-        cardElem.style.color = 'crimson';
-    }
     cardElem.addEventListener('click',()=>{
         if (window.playerIsActive) {
             clickCard(card.id, card.value, card.color);
@@ -639,6 +643,7 @@ function makeSlot(){
         if(window.selectedCard !== undefined){
             const cardElem = document.getElementById(`Card_${window.selectedCard}`);
             slotElem.innerHTML = cardElem.innerHTML;
+            slotElem.style.color = (cardElem.style.color === 'crimson')?'coral':'';
             slotElem.setAttribute('card',`${window.selectedCard}`);
             cardElem.classList.remove('selected');
             window.selectedCard = undefined;

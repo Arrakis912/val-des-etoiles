@@ -1,10 +1,14 @@
 body{
-    background-color: teal;
+    background-image: url('images/fond_lisse.jpg');
+    /* background-color: teal; */
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
     color: whitesmoke;
     --card-height: 45px;
     --card-width: 40px;
-    --card-border-size: 3px;
-    --card-margin: 1px;
+    --card-border-size: 2px;
+    --card-margin: 2px;
     --card-height-with-border: calc(var(--card-height) + (2 * (var(--card-border-size) + var(--card-margin))));
     --card-width-with-border: calc(var(--card-width) + (2 * (var(--card-border-size) + var(--card-margin))));
     --info-line-height: calc(var(--card-height-with-border) / 2);
@@ -23,7 +27,7 @@ label{
     width: var(--card-width);
     background-color: white;
     color: black;
-    border: var(--card-border-size) solid black;
+    border: var(--card-border-size) solid grey;
     margin: var(--card-margin);
     font-size:large;
 }
@@ -44,6 +48,7 @@ label{
     height: var(--card-height);
     width: var(--card-width);
     border: var(--card-border-size) solid cyan;
+    background-color: black;
     margin: var(--card-margin);
     font-size:large;
 }
@@ -70,6 +75,10 @@ label{
     height: var(--info-line-height);
     width: 100%;
     display:flex;
+}
+#makeNewGameArea{
+    border: var(--card-border-size) solid black;
+    width: 300px;
 }
 .gameButton{
     height: var(--info-line-height);
