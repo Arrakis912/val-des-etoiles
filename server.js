@@ -1,7 +1,7 @@
 const http = require('http');
 
-const hostname = '127.0.0.1';
-const port = 666;
+const hostname = '0.0.0.0';
+const port = 8080;
 
 class Card{
     constructor(color, value, visibility="None", id = undefined){
@@ -296,7 +296,7 @@ class Creature{
 
         if (this[color] !== undefined && errorState === 'ok'){
             this.damage[color] += value;
-            if (this.damage[color] > this.computeValue(color)){
+            if (this.damage[color] >= this.computeValue(color)){
                 errorState = this.ripCard(color);
             }
         }
@@ -581,7 +581,7 @@ class PlayerStatus{
                     if(opponent.hasHeartAtPosition() !== -1){
                         return 'cannot attack opponent directly with weapon, creature with heart on field';
                     }
-                    opponent.damage(card.getRawValue(card.getRawValue()));
+                    opponent.damage(card.getRawValue());
                 }else{
                     return `unable to use weapon on target type ${target.type}`;
                 }
@@ -1189,6 +1189,7 @@ const server = http.createServer((req, res) => {
     const { headers, method, url } = req;
     let body = '';
     let bodyParts = [];
+    console.log('received!')
     req.on('error', (err) => {
         console.error(err);
     }).on('data', (chunk) => {
@@ -1200,11 +1201,11 @@ const server = http.createServer((req, res) => {
         res.setHeader('Access-Control-Request-Method', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
         res.setHeader('Access-Control-Allow-Headers', '*');
-        // if (req.method === 'OPTIONS') {
-        //     res.statusCode =200;
-        //     res.end(JSON.stringify({}));
-        //     return;
-        // };
+        if (req.method === 'OPTIONS') {
+            res.statusCode =200;
+            res.end(JSON.stringify({}));
+            return;
+        };
         body = Buffer.concat(bodyParts).toString();
         // At this point, we have the headers, method, url and body, and can now
         // do whatever we need to in order to respond to this request.
