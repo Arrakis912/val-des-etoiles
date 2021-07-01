@@ -1,7 +1,7 @@
 const http = require('http');
 
-const hostname = '127.0.0.1';
-const port = 666;
+const hostname = '0.0.0.0';
+const port = 8080;
 
 class Card{
     constructor(color, value, visibility="None", id = undefined){
@@ -9,12 +9,14 @@ class Card{
         this.value = value;
         this.id = id;
         this.visibility = visibility;
-        this.isHead = (this.value === 'J' || this.value === 'Q' || this.value === 'K')? true : false;
+        this.isHead = (this.value === 'J' || this.value === 'V' || this.value === 'Q' || this.value === 'K')? true : false;
         this.attachedTo = 'Source';
     }
     getRawValue(){
         switch (this.value) {
             case 'J':
+                return 1;
+            case 'V':
                 return 1;
             case 'Q':
                 return 2;
@@ -32,7 +34,7 @@ function makeSource(){
         for (let value = 1; value <= 10; value++) {
             notShuffled.push(new Card(color,value));
         }
-        notShuffled.push(new Card(color, 'J'));
+        notShuffled.push(new Card(color, 'V'));
         notShuffled.push(new Card(color, 'Q'));
         notShuffled.push(new Card(color, 'K'));
     })
@@ -115,7 +117,7 @@ class Creature{
                     if(creature === undefined){
                         return 'unable to find target creature'
                     }
-                    if(this[aspect].value === "J" && this[aspect].color==="weapon"){
+                    if(this[aspect].value === "V"){
                         creature.butcherMark = true;
                     }
                     errorState = creature.damageColor("heart",this.computeValue(aspect));
@@ -145,7 +147,7 @@ class Creature{
                     if(this.type === "magicien"){
                         creature.magicienMarks += 1;
                     }
-                    if(this[aspect].value === "J" && this[aspect].color==="spirit"){
+                    if(this[aspect].value === "V"){
                         creature.magicienMarks += 1;
                     }
                     errorState = creature.damageColor("power",this.computeValue(aspect));
@@ -177,7 +179,7 @@ class Creature{
                         drawCount+=1;
                     }
                 }
-                if(this['power'].value === 'J' && this['power'].color === 'power'){
+                if(this['power'].value === 'V'){
                     drawCount+=1;
                     revealCount = drawCount;
                 }
@@ -235,11 +237,9 @@ class Creature{
         }
         card.visibility = forWho;
         if(forWho !== this.owner){
-            if (card.value === 'J') {
-                if(card.color !== "sang" && card.color !== "cendre"){//check Jokers
-                    if (card.color !== color || this.head.color !== color) {//check Homme Liges
-                        errorState = this.handleInvalidCardReveal(color);//if none, bad card
-                    }
+            if (card.value === 'V') {
+                if (card.color !== color || this.head.color !== color) {//check if not Homme Liges
+                    errorState = this.handleInvalidCardReveal(color);//if none, bad card
                 }
             }else if(card.value === 'Q'){
                 if(this.head.value !== 'K' || this.head.color !== card.color || color !== "heart"){//check lovers
@@ -296,7 +296,7 @@ class Creature{
 
         if (this[color] !== undefined && errorState === 'ok'){
             this.damage[color] += value;
-            if (this.damage[color] > this.computeValue(color)){
+            if (this.damage[color] >= this.computeValue(color)){
                 errorState = this.ripCard(color);
             }
         }
@@ -313,7 +313,7 @@ class Creature{
             if (this.type === "enfant") {
                 owner.getOpponent().damage(5);
             }
-            if (this.head.color === "heart" && this.heart.value === "J" && this.heart.color === "heart"){
+            if (this.head.color === "heart" && this.heart.value === "V" && this.heart.color === "heart"){
                 owner.getOpponent().damage(5);
             }
         }
@@ -385,11 +385,32 @@ class Creature{
                     baseValue = colorIsRed?6:1;
                 } else if (card.color === "cendre"){
                     baseValue = colorIsRed?1:6;
-                } else if (this.head.color === card.color && color === card.color){
-                    baseValue = 7;
+                } else {
+                    console.error(`invalid joker color : ${card.color}`);
+                    return 0;
                 }
+            } else if(baseValue === "V"){
+                    baseValue = 5;
             } else {
                 return 0;
+            }
+        }
+        if(this.head.value === 'J'){
+            baseValue += 1;
+        } else if(this.head.color === color){
+            switch (this.head.value) {
+                case 'V':
+                    baseValue += 1;
+                    break;
+                case 'Q':
+                    baseValue += 2;
+                    break;
+                case 'K':
+                    baseValue += 3;
+                    break;
+                default:
+                    console.error(`invalid head value : ${this.head.value}`)
+                    break;
             }
         }
         if(this.nedemoneTokens !== undefined && this.nedemoneTokens[color]!== undefined){
@@ -1228,6 +1249,10 @@ function processQuery(url, method, body){
             returnBody = JSON.stringify(gameList.map((game)=>game.name));
             break;
         }
+        case "getGameList":{
+            returnBody = JSON.stringify(gameList.map((game)=>game.name));
+            break;
+        }
         case "disconnect":{
             const starName = body.name;
             removePlayer(starName);
@@ -1339,5 +1364,10 @@ function removeGame(name){
 }
 function getGameVisibleStatus(gameName, starName){
     console.log(`${starName} requested update status on ${gameName}`);
-    return gameList.find((elem)=>elem.name === gameName).getStateVisibleFor(starName);
+    const game = gameList.find((elem)=>elem.name === gameName);
+    if(game !== undefined){
+        return game.getStateVisibleFor(starName);
+    } else {
+        return {status : "KO", error:"game not found"};
+    }
 }

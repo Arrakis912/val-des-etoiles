@@ -60,6 +60,7 @@ export class QueryManager{
             document.getElementById("initPage").style.display = 'none';
             window.STARNAME = starName;
             window.SERVERURL = url;
+            window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(url)}).bind(this), 5000);
             this.makeGameList(res);
             document.getElementById("welcome").textContent = `bienvenue ${starName}`;
             document.getElementById("gameListPage").style.display = 'block';
@@ -67,13 +68,21 @@ export class QueryManager{
         })
     }
 
+    static listUpdate(url){
+        this.makeRequest('POST', url, JSON.stringify({cmd: 'getGameList'}),(res)=>{
+            console.log(`got Game List ${res}`)
+            this.makeGameList(res);
+        })
+    }
+
     static makeGameList(jsonList){
         const actualList = JSON.parse(jsonList);
+        let listElem = document.getElementById("GameList");
         let htmlList = '';
         actualList.forEach(game => {
             htmlList += `<label id='${game}'>${game}</label><button id="buttonJoinGame_${game}">Rejoindre ce val</button></br>`
         });
-        document.getElementById("GameList").innerHTML = htmlList;
+        listElem.innerHTML = htmlList;
         actualList.forEach(game => {
             document.getElementById(`buttonJoinGame_${game}`).addEventListener('click', ()=>{this.joinGameRequest(game)});
         });
@@ -91,6 +100,7 @@ export class QueryManager{
             document.getElementById("gameBoard").style.flexDirection = 'column';
             console.log('joinedGame!');
             window.GAMENAME = game;
+            clearInterval(window.GAMELISTUPDATEINTERVAL);
             window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
             window.playerIsActive = false;
         });
@@ -118,12 +128,14 @@ export class QueryManager{
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'exitGame', name: window.STARNAME, game:window.GAMENAME}),(res)=>{
             clearInterval(window.GAMEUPDATEINTERVAL);
             window.GAMENAME = undefined;
+            window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(url)}).bind(this), 5000);
         });
     }
 
     static disconnectRequest(){
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'disconnect', name: window.STARNAME}),(res)=>{
             console.log('disconnected!');
+            clearInterval(window.GAMELISTUPDATEINTERVAL);
             window.STARNAME = undefined;
         });
     }

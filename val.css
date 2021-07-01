@@ -1,9 +1,14 @@
+@font-face {
+    font-family: 'starstruck';
+    src: url(/fonts/starstruck/Starstruck.ttf);
+}
+
 body{
     background-image: url('images/fond_lisse.jpg');
     /* background-color: teal; */
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
     color: whitesmoke;
     --card-height: 45px;
     --card-width: 40px;
@@ -22,10 +27,24 @@ label{
     vertical-align: middle;
     font-size: small;
 }
+button{
+    border-radius: 25px;
+    background-color: whitesmoke;
+    font-family: 'starstruck';
+}
+button:hover{
+    background-color: darkgray;
+}
+button:focus{
+    outline: none;
+}
+button:active{
+    background-color: grey;
+}
 .card{
     height: var(--card-height);
     width: var(--card-width);
-    background-color: white;
+    background-color: whitesmoke;
     color: black;
     border: var(--card-border-size) solid grey;
     margin: var(--card-margin);
@@ -47,7 +66,7 @@ label{
 .slot{
     height: var(--card-height);
     width: var(--card-width);
-    border: var(--card-border-size) solid cyan;
+    border: var(--card-border-size) solid white;
     background-color: black;
     margin: var(--card-margin);
     font-size:large;
@@ -100,11 +119,17 @@ label{
 #source{
     height:var(--card-height);
     width:var(--card-width);
-    background-color: cyan;
+    /* background-color: cyan; */
+    background-image: url('images/source.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    line-height: calc(var(--card-height) - 5px);
     color:black;
     border: var(--card-border-size) solid black;
     margin: var(--card-margin);
-    font-size:large;
+    font-weight: bold;
+    text-shadow: 1px 1px white;
+    font-size:larger;
 }
 #river{
     height:var(--card-height-with-border);
@@ -124,11 +149,20 @@ label{
     margin: 5px;
 }
 .rayCount{
-    height:var(--card-height); 
-    width:var(--card-width);
-    border: var(--card-border-size) solid red;
-    color: red;
-    margin: var(--card-margin);
-    background-color: yellow;
-    font-size:large;
+    height:var(--card-height-with-border); 
+    width:var(--card-height-with-border);
+    background-image: url('images/majeste_test1.png');
+    background-repeat: no-repeat;
+    background-size:contain;
+    border: 1px solid grey;
+    border-radius: calc(var(--card-height));
+    color: black;
+    line-height: calc(var(--card-height-with-border) - 2px);
+    font-size: large;
+    font-weight: bold;
+    text-align: center;
+    /* margin: var(--card-margin); */
+    /* background-color: crimson; */
+    /* box-shadow: black 1px 1px 1px 1px inset; */
+    text-shadow: 1px 1px white;
 }

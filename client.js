@@ -271,7 +271,7 @@ function makeButtonLine(gameStatus, playerIsActive){
             line.appendChild(makeButton("skipPhaseButton", "Finir Phase", clickGameButtonSkip));
             if(gameStatus.phase === 0){
                 line.appendChild(makeButton("createCreatureButton", "Engendrer", clickCreateCreatureButton));
-                line.appendChild(makeButton("educateButton", "Eduquer", clickEducateButton));
+                line.appendChild(makeButton("educateButton", "Echange", clickEducateButton));
                 line.appendChild(makeButton("educateAddButton", "Ajout", clickEducAddButton));
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
@@ -324,7 +324,7 @@ function makeRiver(gameStatus, cardsLeft){
     let source = document.createElement('label');
     river.setAttribute('id','river');
     source.setAttribute('id', 'source');
-    source.innerHTML = `${cardsLeft} cards`;
+    source.innerHTML = `${cardsLeft}`;
     source.addEventListener('click', clickSource);
     river.appendChild(source);
     gameStatus.river.forEach(card=>{
@@ -358,7 +358,7 @@ function makeRayLabel(gameStatus, playerId, isOp){
     let rayLabel = document.createElement('label');
     rayLabel.setAttribute('id', `${isOp?"Op":""}RayLabel`);
     rayLabel.classList.add('rayCount');
-    rayLabel.innerHTML = `Ray : ${gameStatus.players[playerId].ray}`;
+    rayLabel.innerHTML = `${gameStatus.players[playerId].ray}`;
     rayLabel.addEventListener('click',()=>{
         if (window.playerIsActive) {
             clickRay(isOp);
