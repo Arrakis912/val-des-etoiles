@@ -257,8 +257,7 @@ class Creature{
                     errorState = this.ripCard(color);
                     this.type = "dame noire";
                 }
-                
-            }else if(card.color != color){
+            }else if(card.color !== color && card.value !== 'J'){
                 errorState = this.handleInvalidCardReveal(color);
             }
         }
@@ -352,8 +351,18 @@ class Creature{
         return 'ok';
     }
     buryCard(aspect){
-        this[aspect].attachedTo = 'River';
-        this.getGame().river.push(this[aspect]);
+        let game = this.getGame();
+        let card = this[aspect];
+        if(card.isHead && card.color === "spirit"){
+            let mars = game.players.find((elem)=>elem.name === "Mars");
+            card.attachedTo = 'Mars';
+            if(mars !== undefined){
+                mars.obtainCard(card);
+            }
+        } else {
+            card.attachedTo = 'River';
+            game.river.push(card);
+        }
         this[aspect] = undefined;
     }
     endOfBurial(){
@@ -723,8 +732,17 @@ class PlayerStatus{
                 return `card color ${card.color} unrecognised`;
         }
         if(errorState === "ok"){
-            card.attachedTo = 'River';
-            this.getGame().river.push(card);
+            let game = this.getGame();
+            if(card.isHead && card.color === "spirit"){
+                let mars = game.players.find((elem)=>elem.name === "Mars");
+                card.attachedTo = 'Mars';
+                if(mars !== undefined){
+                    mars.obtainCard(card);
+                }
+            } else {
+                card.attachedTo = 'River';
+                game.river.push(card);
+            }
             this.removeCardsFromHand([this.hand.findIndex(elem=> elem.id === card.id)]);
         }
         return errorState;
