@@ -602,7 +602,7 @@ class PlayerStatus{
                     if(opponent.hasHeartAtPosition() !== -1){
                         return 'cannot attack opponent directly with weapon, creature with heart on field';
                     }
-                    opponent.damage(card.getRawValue(card.getRawValue()));
+                    opponent.damage(card.getRawValue());
                 }else{
                     return `unable to use weapon on target type ${target.type}`;
                 }
@@ -1210,6 +1210,7 @@ const server = http.createServer((req, res) => {
     const { headers, method, url } = req;
     let body = '';
     let bodyParts = [];
+    console.log('received!')
     req.on('error', (err) => {
         console.error(err);
     }).on('data', (chunk) => {
@@ -1221,11 +1222,11 @@ const server = http.createServer((req, res) => {
         res.setHeader('Access-Control-Request-Method', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
         res.setHeader('Access-Control-Allow-Headers', '*');
-        // if (req.method === 'OPTIONS') {
-        //     res.statusCode =200;
-        //     res.end(JSON.stringify({}));
-        //     return;
-        // };
+        if (req.method === 'OPTIONS') {
+            res.statusCode =200;
+            res.end(JSON.stringify({}));
+            return;
+        };
         body = Buffer.concat(bodyParts).toString();
         // At this point, we have the headers, method, url and body, and can now
         // do whatever we need to in order to respond to this request.
