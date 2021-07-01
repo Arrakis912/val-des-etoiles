@@ -120,6 +120,7 @@ export class QueryManager{
             console.log('madeGame!');
             window.GAMENAME = gameName;
             window.playerIsActive = false;
+            clearInterval(window.GAMELISTUPDATEINTERVAL);
             window.GAMEUPDATEINTERVAL = setInterval(this.requestUpdate.bind(this), 1000);
         });
     }
