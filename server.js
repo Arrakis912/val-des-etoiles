@@ -1248,7 +1248,7 @@ const server = http.createServer((req, res) => {
         body = Buffer.concat(bodyParts).toString();
         // At this point, we have the headers, method, url and body, and can now
         // do whatever we need to in order to respond to this request.
-        // console.log(`client ${url} connected with method : ${method} and body : ${body}`);
+        console.log(`client ${url} connected with method : ${method} and body : ${body}`);
         [res.statusCode, returnBody] = processQuery(url, method, JSON.parse(body));
         res.end(returnBody);
     });
