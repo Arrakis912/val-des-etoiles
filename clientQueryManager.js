@@ -129,7 +129,7 @@ export class QueryManager{
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'exitGame', name: window.STARNAME, game:window.GAMENAME}),(res)=>{
             clearInterval(window.GAMEUPDATEINTERVAL);
             window.GAMENAME = undefined;
-            window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(url)}).bind(this), 5000);
+            window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(window.SERVERURL)}).bind(this), 5000);
         });
     }
 

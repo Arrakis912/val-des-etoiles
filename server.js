@@ -902,13 +902,12 @@ class GameStatus{
     }
 
     removePlayer(player){
-        player.game = undefined;
         if(!this.started){
             this.players.splice(this.players.findIndex((elem)=>elem.name===player.name),1);
         }
         else {
             if(this.timeout == undefined){ // wait for reconnection of missing player.
-                this.timeout = setTimeout(removeGame(this.name),300000)
+                this.timeout = setTimeout((()=>removeGame(this.name)).bind(this),300000);
             } else { // if more than one player absent, kill game right now.
                 clearTimeout(this.timeout);
                 removeGame(this.name);
@@ -920,6 +919,8 @@ class GameStatus{
         this.started = true;
         this.players.forEach(player => {
             player.ray = this.ruleSet === "Helios" ? 36 : 25;
+            player.hand = [];
+            player.creatures = [];
         }, this);
         this.source = makeSource();
         this.drawStartingHandsAndDefineActivePlayer();
@@ -1365,22 +1366,39 @@ function joinGame(gameName, starName){
     console.log(`star ${starName} joining game : ${gameName}`);
     const game = gameList.find((elem)=>elem.name===gameName);
     const player = playerList.find((elem)=>elem.name===starName);
-    game.addPlayer(player);
+    if(player.game !== undefined){
+        exitGame(player.game, starName);
+    }
     player.game = gameName;
+    game.addPlayer(player);
 }
 
 function exitGame(gameName, starName){
     console.log(`star ${starName} exits game : ${gameName}`);
-    const game = gameList.find((elem)=>elem.name===gameName);
     const player = playerList.find((elem)=>elem.name===starName);
-    game.removePlayer(player);
+    if(player !== undefined){
+        const game = gameList.find((elem)=>elem.name===player.game);
+        if (game !== undefined) {
+            player.game = undefined;
+            game.removePlayer(player);
+        }
+    }
 }
 
 function removeGame(name){
-    gameList.splice(gameList.findIndex((elem)=>elem.name===name),1);
-    gameStatus[game] = undefined;
     console.log(`removing game : ${name}`)
+    let gameIndex = gameList.findIndex((elem)=>elem.name===name);
+    if(gameIndex !== -1){
+        let game = gameList[gameIndex];
+        gameList.splice(gameIndex,1);
+        game.players.forEach(player => {
+            if(player.game === name){
+                player.game = undefined;
+            }
+        });
+    }
 }
+
 function getGameVisibleStatus(gameName, starName){
     console.log(`${starName} requested update status on ${gameName}`);
     const game = gameList.find((elem)=>elem.name === gameName);
