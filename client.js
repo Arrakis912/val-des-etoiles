@@ -385,6 +385,7 @@ function makeCreatureVoidFiller(){
 
 function makeCard(card,base_revealed=true){
     let revealed = base_revealed;
+    let spiedOn = false;
     switch(card.visibility){
         case "Active":
             revealed = true;
@@ -399,6 +400,7 @@ function makeCard(card,base_revealed=true){
             break;
         default:
             console.log(`unrecognised visibility value ${card.visibility} in card ${card.id}, must be an opponent peaking at card`);
+            spiedOn = true;
     }
     let cardElem;
     if (revealed) {
@@ -410,6 +412,9 @@ function makeCard(card,base_revealed=true){
     } else {
         cardElem = document.createElement('img');
         cardElem.setAttribute('src',"images/dos_carte.jpg");
+    }
+    if (spiedOn) {
+        cardElem.style.borderColor = "yellow"
     }
     cardElem.setAttribute('id',`Card_${card.id}`);
     cardElem.classList.add('card');
