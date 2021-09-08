@@ -76,15 +76,15 @@ export class QueryManager{
     }
 
     static makeGameList(jsonList){
-        const actualList = JSON.parse(jsonList);
+        const gameList = JSON.parse(jsonList);
         let listElem = document.getElementById("GameList");
         let htmlList = '';
-        actualList.forEach(game => {
-            htmlList += `<label id='${game}'>${game}</label><button id="buttonJoinGame_${game}">Rejoindre ce val</button></br>`
+        gameList.forEach(game => {
+            htmlList += `<label id='${game.name}'>${game.name} (${game.rule})</label><button id="buttonJoinGame_${game.name}">Rejoindre ce val</button></br>`
         });
         listElem.innerHTML = htmlList;
-        actualList.forEach(game => {
-            document.getElementById(`buttonJoinGame_${game}`).addEventListener('click', ()=>{this.joinGameRequest(game)});
+        gameList.forEach(game => {
+            document.getElementById(`buttonJoinGame_${game.name}`).addEventListener('click', ()=>{this.joinGameRequest(game.name)});
         });
     }
 

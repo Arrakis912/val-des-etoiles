@@ -169,13 +169,13 @@ class Creature{
                 let drawCount = 1;
                 if(this.type === "fou"){
                     drawCount+=1;
-                    if(game.ruleSet === "Helios"){
+                    if(game.ruleSet.includes("Helios")){
                         drawCount+=1;
                     }
                 }
                 if(this.type === "dame noire" && target.type === "river"){
                     drawCount+=1;
-                    if(game.ruleSet === "Helios"){
+                    if(game.ruleSet.includes("Helios")){
                         drawCount+=1;
                     }
                 }
@@ -319,12 +319,12 @@ class Creature{
         const game = this.getGame();
         if(color === "power" && this.magicienMarks!=0){
             if(owner.hasSpectre){
-                let drawCount = (game.ruleSet === "Helios"?2:1);
+                let drawCount = (game.ruleSet.includes("Helios")?2:1);
                 for (let index = 0; index < this.magicienMarks; index++) {
                     game.interrupt({type:"multiAction", drawCount, revealCount :0});
                 }
             } else {
-                let drawCount = this.magicienMarks * (game.ruleSet === "Helios"?2:1);
+                let drawCount = this.magicienMarks * (game.ruleSet.includes("Helios")?2:1);
                 game.activePlayerDraw("source", drawCount);
             }
         }
@@ -472,7 +472,7 @@ class Creature{
                             return undefined;
                         }
                     } else {
-                        if(this.getGame().ruleSet === "Helios"){
+                        if(this.getGame().ruleSet.includes("Helios")){
                             return 'ombre';
                         } else {
                             return undefined;
@@ -918,7 +918,7 @@ class GameStatus{
     startGame(){
         this.started = true;
         this.players.forEach(player => {
-            player.ray = this.ruleSet === "Helios" ? 36 : 25;
+            player.ray = this.ruleSet.includes("Helios") ? 36 : 25;
             player.hand = [];
             player.creatures = [];
         }, this);
@@ -1086,7 +1086,7 @@ class GameStatus{
                             return {status : "KO", error : `draw unavailable from river with no spectre`};
                         }
                         if(target.type === "source" || target.type === "river"){
-                            let count = this.interuptionObject.drawCount + ((this.interuptionObject.isDN && target.type === "river")?(this.ruleSet==="Helios"?2:1):0);
+                            let count = this.interuptionObject.drawCount + ((this.interuptionObject.isDN && target.type === "river")?(this.ruleSet.includes("Helios")?2:1):0);
                             this.activePlayerDraw(target.type, count);
                             this.interuptionObject.drawCount = 0;
                         } else {
@@ -1266,11 +1266,11 @@ function processQuery(url, method, body){
         case "connect":{
             const starName = body.name;
             connectPlayer(starName);
-            returnBody = JSON.stringify(gameList.map((game)=>game.name));
+            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
             break;
         }
         case "getGameList":{
-            returnBody = JSON.stringify(gameList.map((game)=>game.name));
+            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
             break;
         }
         case "disconnect":{
@@ -1298,7 +1298,7 @@ function processQuery(url, method, body){
             const starName = body.name;
             const gameName = body.game;
             exitGame(gameName, starName);
-            returnBody = JSON.stringify(gameList.map((game)=>game.name));
+            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
             break;
         }
         case "update":{
