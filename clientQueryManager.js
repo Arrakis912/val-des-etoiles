@@ -75,8 +75,8 @@ export class QueryManager{
         })
     }
 
-    static makeGameList(jsonList){
-        const gameList = JSON.parse(jsonList);
+    static makeGameList(jsonListInObj){
+        const gameList = JSON.parse(jsonListInObj)["gameList"];
         let listElem = document.getElementById("GameList");
         let htmlList = '';
         gameList.forEach(game => {
@@ -155,7 +155,7 @@ export class QueryManager{
             this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'update', name: window.STARNAME, game: window.GAMENAME}),(res)=>{
                 // console.log(`got update : ${res}`);
                 if (JSON.stringify(window.GAMESTATUS) !== res) {
-                    window.GAMESTATUS = JSON.parse(res);
+                    window.GAMESTATUS = JSON.parse(res)["gameState"];
                     if(window.GAMESTATUS.started){
                         window.UPDATEUI = true;
                     }

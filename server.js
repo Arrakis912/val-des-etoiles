@@ -1266,11 +1266,11 @@ function processQuery(url, method, body){
         case "connect":{
             const starName = body.name;
             connectPlayer(starName);
-            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
+            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}})});
             break;
         }
         case "getGameList":{
-            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
+            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}})});
             break;
         }
         case "disconnect":{
@@ -1304,7 +1304,7 @@ function processQuery(url, method, body){
         case "update":{
             const starName = body.name;
             const gameName = body.game;
-            returnBody = JSON.stringify(getGameVisibleStatus(gameName, starName));
+            returnBody = JSON.stringify({"gameState":getGameVisibleStatus(gameName, starName)});
             break;
         }
         case "play": {
