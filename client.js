@@ -120,7 +120,7 @@ function clickCard(cardId, value, color){
         } else if (phase === 1 && !isOp){// Play Creature Aspect : must select target
             selectCard(cardElem, cardId);
             window.selectedFunction = (target)=>{
-                sendMove({type:"CreatureAction", aspect, creature : creatureId, target});
+                sendMove({type:"creatureAction", aspect, creature : creatureId, target});
             }
         } else if(phase === -2){
             switch (window.GAMESTATUS.interuptionObject.type) {

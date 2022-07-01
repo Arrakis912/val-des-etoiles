@@ -1020,7 +1020,7 @@ class GameStatus{
                 }
                 break;
             }
-            case "CreatureAction":{
+            case "creatureAction":{
                 if (this.phase != 1) {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
                 }
