@@ -1319,7 +1319,7 @@ function processQuery(url, method, body){
                 returnBody = JSON.stringify({status : "KO", error:"player not in game"});
                 break;
             }
-            returnBody = JSON.stringify(game.playMove(starName, body.move));
+            returnBody = JSON.stringify(game.playMove(starName, body.moveDesc));
             break;
         }
         case undefined:

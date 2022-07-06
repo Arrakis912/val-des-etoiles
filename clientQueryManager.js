@@ -141,8 +141,8 @@ export class QueryManager{
         });
     }
 
-    static playRequest(move){
-        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'play', name: window.STARNAME, move}),(res)=>{
+    static playRequest(moveDesc){
+        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'play', name: window.STARNAME, moveDesc}),(res)=>{
             const body = JSON.parse(res);
             if(body.status !== "OK"){
                 console.error(`server-side play error : ${body.error}`)
