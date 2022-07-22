@@ -34,7 +34,7 @@ export class QueryManager{
                     if (this.config[m].requestList.length > 0) {
                         const nextRequest = this.config[m].requestList[0];
                         this.config[m].xhttp.open(nextRequest.method, `http://${nextRequest.destURL}`);
-                        this.config[m].xhttp.setRequestHeader("Content-Type", "text/plain");
+                        this.config[m].xhttp.setRequestHeader("Content-Type", "application/json");
                         this.config[m].xhttp.send(nextRequest.body);
                     }
                 }
@@ -48,7 +48,7 @@ export class QueryManager{
         const requestNum = this.config[method].requestList.push({method,destURL,body,onload});
         if (requestNum === 1) {
             this.config[method].xhttp.open(method, `http://${destURL}`);
-            this.config[method].xhttp.setRequestHeader("Content-Type", "text/plain");
+            this.config[method].xhttp.setRequestHeader("Content-Type", "application/json");
             console.log(`sending request with body : ${body}`)
             this.config[method].xhttp.send(body);
         }
