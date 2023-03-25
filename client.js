@@ -10,7 +10,7 @@ function updateUIInterval(){
 function connect(){
     const name = document.getElementById('input_name').value;
     //const url = document.getElementById('input_url').value;
-    
+    url = "51.38.238.74:8080"
     console.log(`client connect function with name ${name} and url ${url}`);
     
     QueryManager.connectRequest(url, name);
