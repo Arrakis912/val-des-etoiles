@@ -9,7 +9,8 @@ function updateUIInterval(){
 
 function connect(){
     const name = document.getElementById('input_name').value;
-    const url = document.getElementById('input_url').value;
+    //const url = document.getElementById('input_url').value;
+    
     console.log(`client connect function with name ${name} and url ${url}`);
     
     QueryManager.connectRequest(url, name);
