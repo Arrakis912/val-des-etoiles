@@ -239,7 +239,7 @@ function updateUI(){
     const activePlayerName = gameStatus.players[gameStatus.activePlayer].name;
     const playerIndex = gameStatus.players.findIndex((elem)=>elem.name===window.STARNAME);
     window.playerIsActive = (window.STARNAME === activePlayerName);
-    if(gameStatus.interuptionObject !== null){
+    if(gameStatus.interuptionObject !== undefined){
         if(gameStatus.interuptionObject.type === "victory"){
             //override activity to avoid any future update query
             window.playerIsActive = true;
