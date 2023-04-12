@@ -1372,13 +1372,17 @@ function addGame(name, ruleSet){
 
 function joinGame(gameName, starName){
     console.log(`star ${starName} joining game : ${gameName}`);
-    const game = gameList.find((elem)=>elem.name===gameName);
     const player = playerList.find((elem)=>elem.name===starName);
-    if(player.game !== undefined){
-        exitGame(player.game, starName);
+    if(player !== undefined){
+        const game = gameList.find((elem)=>elem.name===gameName);
+        if (game !== undefined) {
+            if(player.game !== undefined){
+                exitGame(player.game, starName);
+            }
+            player.game = gameName;
+            game.addPlayer(player);
+        }
     }
-    player.game = gameName;
-    game.addPlayer(player);
 }
 
 function exitGame(gameName, starName){
