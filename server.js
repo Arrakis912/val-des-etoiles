@@ -922,8 +922,18 @@ class GameStatus{
             player.hand = [];
             player.creatures = [];
         }, this);
-        this.source = makeSource();
-        this.drawStartingHandsAndDefineActivePlayer();
+        let bothPlayersHaveHead = false;
+        while(!bothPlayersHaveHead){
+            this.source = makeSource();
+            this.players.forEach(player => {
+                player.hand = [];
+            });
+            this.drawStartingHandsAndDefineActivePlayer();
+            bothPlayersHaveHead = this.checkStartingHandsValidity();
+            if(!bothPlayersHaveHead){
+                console.log("Redoing Sunset as no head in a")
+            }
+        }
         this.phase = 0;
     }
 
@@ -958,6 +968,22 @@ class GameStatus{
                 cardGroup = [];
             }
         }
+    }
+
+    checkStartingHandsValidity(){
+        let bothHaveHead = true;
+        this.players.forEach((player)=>{
+            let playerHasHead = false;
+            player.hand.forEach(card => {
+                if(card.isHead){
+                    playerHasHead = true;
+                }
+            });
+            if(!playerHasHead){
+                bothHaveHead = false;
+            }
+        }, this)
+        return bothHaveHead;
     }
 
     playMove(starName, moveDescription){
