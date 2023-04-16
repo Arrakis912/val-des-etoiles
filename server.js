@@ -1,7 +1,7 @@
 const http = require('http');
 
 const hostname = '0.0.0.0';
-const port = 8080;
+const port = 8081;
 
 class Card{
     constructor(color, value, visibility="None", id = undefined){
