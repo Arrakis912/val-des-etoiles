@@ -881,7 +881,10 @@ class GameStatus{
     }
 
     getStateVisibleFor(playerName){
+        let timeout = this.timeout;
+        this.timeout = null;//Remove timeout of game during stringification, as it has a circular reference
         let visibleState = JSON.parse(JSON.stringify(this));
+        this.timeout = timeout;
         //TODO : mask Hidden info for player
         return visibleState;
     }
@@ -902,6 +905,10 @@ class GameStatus{
     }
 
     removePlayer(player){
+        if(this.players.findIndex((elem)=>elem.name===player.name)==-1){
+            console.error("trying to remove star "+player+" from game "+this.name+" but it isn't a player of that game...")
+            return;
+        }
         if(!this.started){
             this.players.splice(this.players.findIndex((elem)=>elem.name===player.name),1);
         }

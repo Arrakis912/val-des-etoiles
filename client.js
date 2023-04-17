@@ -9,8 +9,8 @@ function updateUIInterval(){
 
 function connect(){
     const name = document.getElementById('input_name').value;
-    // const url = document.getElementById('input_url').value;
-    const url = "51.38.238.74:8081"
+    // const url = "localhost:8081";
+    const url = "51.38.238.74:8081";
     console.log(`client connect function with name ${name} and url ${url}`);
     
     QueryManager.connectRequest(url, name);
@@ -220,6 +220,10 @@ function clickCancelMoveButton(){
     updateUI();
 }
 
+function clickExitGameButton(){
+    backToList();
+}
+
 function sendMove(move){
     QueryManager.playRequest(move);
     window.playerIsActive = false;
@@ -260,8 +264,24 @@ function updateUI(){
 function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     let line = document.createElement('label');
     line.setAttribute('id','gameInfo');
-    line.innerHTML = `active player : ${activePlayerName} / phase : ${gameStatus.phase} / ${playerIsActive?textInstruction(gameStatus):"Waiting for other player's action"}`;
+    line.innerHTML = `joueur actif : ${activePlayerName} / phase ${getPhaseName(gameStatus.phase)} / ${playerIsActive?textInstruction(gameStatus):"En attente d'action de l'adversaire"}`;
     return line;
+}
+
+function getPhaseName(phaseId){
+    switch (phaseId) {
+        case -2:{
+            return "interrompue";
+        }
+        case 0:{
+            return "d'influence";
+        }
+        case 1:{
+            return "des êtres";
+        }
+        default:
+            return "ERROR"
+    }
 }
 
 function replaceInfoLine(message){
@@ -273,6 +293,7 @@ function makeButtonLine(gameStatus, playerIsActive){
     let line = document.createElement('div');
     line.setAttribute('id','gameButtons');
     if(playerIsActive){
+        line.appendChild(makeButton("quitGameButton", "Quitter", clickExitGameButton));
         line.appendChild(makeButton("cancelMoveButton", "Annuler", clickCancelMoveButton));
         if(gameStatus.phase === 0 || gameStatus.phase === 1){
             line.appendChild(makeButton("skipPhaseButton", "Finir Phase", clickGameButtonSkip));
@@ -311,7 +332,7 @@ function textInstruction(gameStatus){
             } else if (type === "victory") {
                 return `${(gameStatus.interuptionObject.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interuptionObject.winner+" a gagné")}`
             } else if (type === "multiAction") {
-                return "Action Multiple : click rivière/source : piocher // click carte : révéler/attacker (le joker de cendre révèle PUIS attaque)"
+                return "Action Multiple : click rivière/source : piocher // click carte : révéler/attacker (Attention : le joker de cendre révèle PUIS attaque)"
             }
             return `Tour interrompu : type d'interruption non reconnue ${type}`;
         }
@@ -528,7 +549,7 @@ function makeCreatureSlot(){
     const heartSlot = makeSlot();
     heartSlot.setAttribute('aspect',"heart");
     
-    let cancelCreatureButton = makeButton("cancelCreatureButton", "KO", ()=>{
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "🗙", ()=>{
         window.UIState = "none";
         creatureElem.remove();
     })
@@ -592,7 +613,7 @@ function makeEducAddCreatureSlot(){
     const heartSlot = makeSlot();
     heartSlot.setAttribute('aspect',"heart");
     
-    let cancelCreatureButton = makeButton("cancelCreatureButton", "KO", ()=>{
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "🗙", ()=>{
         window.UIState = "none";
         creatureElem.remove();
     })
