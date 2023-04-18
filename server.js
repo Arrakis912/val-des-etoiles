@@ -562,11 +562,15 @@ class PlayerStatus{
             console.error(`Creating invalid creature`);
             return "invalid creature";
         }
+        let identicalTypeFlag = false;
         this.creatures.forEach((prevCreature)=>{
             if(prevCreature.type === creature.type){
-                return 'creature of same type as previous creature';
+                identicalTypeFlag = true;
             };
         });
+        if(identicalTypeFlag){
+            return 'creature of same type as previous creature';
+        }
         if(creature.type === "damne"){
             console.error(`Can't directly create : damne`);
             return "Can't directly create : damne";
@@ -806,11 +810,15 @@ class PlayerStatus{
             return "Can't add heart to a specter";
         }
         let elemsToAdd = Object.keys(cards);
+        let aspectAlreadyInCreatureFlag = false;
         elemsToAdd.forEach(elem=>{
             if(creature[elem] !== undefined){
-                return 'trying to add aspect already present in creature'
+                aspectAlreadyInCreatureFlag=true;
             }
         })
+        if(aspectAlreadyInCreatureFlag){
+            return 'trying to add aspect already present in creature'
+        }
         elemsToAdd.forEach(elem=>{
             creature[elem] = cards[elem];
         })
