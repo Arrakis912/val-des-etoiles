@@ -317,23 +317,13 @@ class Creature{
             }
         }
         const game = this.getGame();
-        if(color === "power" && this.magicienMarks!=0){
-            if(owner.hasSpectre){
-                let drawCount = (game.ruleSet.includes("Helios")?2:1);
-                for (let index = 0; index < this.magicienMarks; index++) {
-                    game.interrupt({type:"multiAction", drawCount, revealCount :0});
-                }
-            } else {
-                let drawCount = this.magicienMarks * (game.ruleSet.includes("Helios")?2:1);
-                game.activePlayerDraw("source", drawCount);
-            }
-        }
         this.buryCard(color);
         this.type = this.computeType();
         if(this.type === "spectre"){
             owner.damage(5);
             owner.hasSpectre = true;
         }
+        let activePlayerBeforeBurial = game.activePlayer;
         if(this.type === undefined){
             if(previouslySpectralOrDamne){
                 owner.heal(5);
@@ -343,9 +333,21 @@ class Creature{
                 game.players[game.activePlayer].obtainCard(this.head);
                 this.head = undefined;
             }
-            if(!this.endOfBurial()){
+            if(!this.endOfBurial(color === "power" && this.magicienMarks!=0)){
                 this.revealAspects();
                 game.setGameStateToKillingCreature(this);
+            }
+        }
+        if(color === "power" && this.magicienMarks!=0){
+            if(owner.getOpponent().hasSpectre){
+                let drawCount = (game.ruleSet.includes("Helios")?2:1);
+                for (let index = 0; index < this.magicienMarks; index++) {
+                    game.interrupt({type:"multiAction", drawCount, revealCount :0});
+                }
+                game.activePlayer = activePlayerBeforeBurial;
+            } else {
+                let drawCount = this.magicienMarks * (game.ruleSet.includes("Helios")?2:1);
+                game.activePlayerDraw("source", drawCount);
             }
         }
         return 'ok';
@@ -365,7 +367,8 @@ class Creature{
         }
         this[aspect] = undefined;
     }
-    endOfBurial(){
+
+    endOfBurial(boolDontAutoTrashLastCard){
         let cardsStillHere = [];
         ['head','heart','weapon','power','spirit'].forEach(aspect => {
             if (this[aspect] !== undefined){
@@ -376,7 +379,11 @@ class Creature{
             return false;
         } else {
             if (cardsStillHere.length == 1) {
-                this.buryCard(cardsStillHere[0]);
+                if(boolDontAutoTrashLastCard){
+                    return false
+                } else {
+                    this.buryCard(cardsStillHere[0]);
+                }
             }
             let owner = this.getOwner();
             owner.creatures = owner.creatures.filter((elem)=>(elem.id !== this.id), this)
@@ -1086,7 +1093,7 @@ class GameStatus{
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interuptionObject}`};
                 }
                 this.interuptionObject.creature.buryCard(moveDescription.aspect);
-                if (this.interuptionObject.creature.endOfBurial()) {
+                if (this.interuptionObject.creature.endOfBurial(false)) {
                     this.unInteruptFlow();
                 }
                 break;
