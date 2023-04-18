@@ -241,7 +241,6 @@ class Creature{
                 }
                 else{
                     errorState = this.ripCard(color);
-                    this.type = "spectre royal";
                 }
             }else if(card.value === 'R'){
                 if(this.head.value !== 'D' || this.head.color !== card.color || color !== "heart"){// check lovers
@@ -249,8 +248,6 @@ class Creature{
                 }
                 else{
                     errorState = this.ripCard(color);
-                    this.type = "dame noire";
-                    this.lostOne = card;
                 }
             }else if(card.color !== color && card.value !== 'J'){
                 errorState = this.handleInvalidCardReveal(color);
@@ -304,14 +301,16 @@ class Creature{
         }
         const previouslySpectralOrDamne = (this.isSpectral() || this.type === "damne");
         const owner = this.getOwner();
-        let lostDauphin = undefined;
+        let lostDauphinOrLove = undefined;
         if(color === "heart"){
             if (this.type === "enfant") {
                 owner.getOpponent().damage(5);
             }
-            if (this.head.color === "heart" && this.heart.value === "V" && this.heart.color === "heart"){
-                owner.getOpponent().damage(5);
-                lostDauphin = this.heart;
+            if((this.head.color === this.heart.color) && this.heart.isHead){//Dauphin or loved one
+                lostDauphinOrLove = this.heart;
+                if(this.head.value === "V"){//Dauphin
+                    owner.getOpponent().damage(5);
+                }
             }
         }
         const game = this.getGame();
@@ -320,12 +319,12 @@ class Creature{
         if(this.type === "spectre"){
             owner.damage(5);
             owner.hasSpectre = true;
-            if (lostDauphin !== undefined){
+            if (lostDauphinOrLove !== undefined){
                 if(this.head.value == 'R'){
                     this.type = "spectre royal";
                 } else if (this.head.value == 'D') {
                     this.type = "dame noire";
-                    this.lostOne = lostDauphin;
+                    this.lostOne = lostDauphinOrLove;
                 } else {
                     console.error("THIS SHOULD NEVER HAPPEN, INVALID LOSS OF DAUPHIN");
                 }
@@ -363,6 +362,7 @@ class Creature{
     buryCard(aspect){
         let game = this.getGame();
         let card = this[aspect];
+        card.visibility = "Active";
         if(card.isHead && card.color === "spirit"){
             let mars = game.players.find((elem)=>elem.name === "Mars");
             card.attachedTo = 'Mars';
