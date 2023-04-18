@@ -25,7 +25,9 @@ function makeNewGame(){
 
 function backToList(){
     QueryManager.exitGameRequest();
-    document.getElementById("gameBoard").style.display = 'none';
+    let gameBoard = document.getElementById("gameBoard");
+    gameBoard.innerHTML='<label id="gameInfo"></label><br><br><button id="backToListButton">Retour a la liste des Parties</button>';
+    gameBoard.style.display = 'none';
     document.getElementById("gameListPage").style.display = 'block';
 }
 
@@ -184,7 +186,7 @@ function clickGameButtonSkip(){
         if(game.players[game.activePlayer].hasSpectre){
             window.UIState = "endingTurn";
             console.log(`ending turn... where to draw?`);
-            replaceInfoLine("Ending Turn, click river or source to choose where to draw")
+            replaceInfoLine("Fin de tour avec Spectre : click sur rivière ou source pour décider où piocher")
         } else {
             sendMove({type:"endPhase"});
         }
@@ -203,11 +205,11 @@ function clickCreateCreatureButton(){
 
 function clickEducateButton(){
     window.UIState = "educating";
-    replaceInfoLine("Educating : click card in hand then card in creature to replace")
+    replaceInfoLine("Education par l'échange : selectionner la carte en main, puis la carte dans l'être à éduquer par l'échange");
 }
 
 function clickEducAddButton(){
-    replaceInfoLine("Educating : place added cards in layout, validate, and then click on creature where they should be added")
+    replaceInfoLine("Education par l'ajout : Placez les cartes à ajouter dans le modèle, VALIDER, puis cliquez sur la créature à éduquer. ATTENTION : clicker sur une cible d'action potentielle hors du modèle avec une carte selectionée dans votre main tentera de l'utiliser au lieu d'éduquer !")
     if(!(window.UIState === "addToCreature")){
         let versant = document.getElementById('Versant');
         window.UIState = "none";
@@ -264,7 +266,7 @@ function updateUI(){
 function makeInfoLine(gameStatus,activePlayerName,playerIsActive){
     let line = document.createElement('label');
     line.setAttribute('id','gameInfo');
-    line.innerHTML = `joueur actif : ${activePlayerName} / phase ${getPhaseName(gameStatus.phase)} / ${playerIsActive?textInstruction(gameStatus):"En attente d'action de l'adversaire"}`;
+    line.innerHTML = `Joueur actif : ${activePlayerName} / phase ${getPhaseName(gameStatus.phase)} / ${playerIsActive?textInstruction(gameStatus):"En attente d'action de l'adversaire"}`;
     return line;
 }
 
@@ -292,8 +294,8 @@ function replaceInfoLine(message){
 function makeButtonLine(gameStatus, playerIsActive){
     let line = document.createElement('div');
     line.setAttribute('id','gameButtons');
+    line.appendChild(makeButton("quitGameButton", "Quitter", clickExitGameButton));
     if(playerIsActive){
-        line.appendChild(makeButton("quitGameButton", "Quitter", clickExitGameButton));
         line.appendChild(makeButton("cancelMoveButton", "Annuler", clickCancelMoveButton));
         if(gameStatus.phase === 0 || gameStatus.phase === 1){
             line.appendChild(makeButton("skipPhaseButton", "Finir Phase", clickGameButtonSkip));
@@ -303,7 +305,7 @@ function makeButtonLine(gameStatus, playerIsActive){
                 line.appendChild(makeButton("educateAddButton", "Ajout", clickEducAddButton));
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
-            line.appendChild(makeButton("skipRevealButton", "Skip Reveal", ()=>{
+            line.appendChild(makeButton("skipRevealButton", "Passer Revel.", ()=>{
                 sendMove({type:"resolveMultiAction", action: "skip"});
             }));
         }
@@ -330,9 +332,14 @@ function textInstruction(gameStatus){
             if(type === "bury"){
                 return "Enterrement : clicker sur la prochaine carte à envoyer à la rivière."
             } else if (type === "victory") {
-                return `${(gameStatus.interuptionObject.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interuptionObject.winner+" a gagné")}`
+                return `${(gameStatus.interuptionObject.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interuptionObject.winner+" a gagné")}`;
             } else if (type === "multiAction") {
-                return "Action Multiple : click rivière/source : piocher // click carte : révéler/attacker (Attention : le joker de cendre révèle PUIS attaque)"
+                let revealCount = gameStatus.interuptionObject.revealCount;
+                let drawCount = gameStatus.interuptionObject.drawCount;
+                let isDN = gameStatus.interuptionObject.isDN;
+                let hasAttack = gameStatus.interuptionObject.attack;
+
+                return `Action Multiple : Reste à faire : ${(drawCount!==0)?`piocher ${drawCount}${isDN?"(+1 à la rivière)":""} cartes`:""}${(revealCount!==0)?`${drawCount!==0?", ":""}révéler ${revealCount} cartes${hasAttack?" PUIS ":""}`:""}${hasAttack?"attaquer":""}`;
             }
             return `Tour interrompu : type d'interruption non reconnue ${type}`;
         }
@@ -343,7 +350,7 @@ function textInstruction(gameStatus){
         case 1:
             return "Actions des êtres : utiliser un être (click : carte utilisée)";
         default:
-            return "Situation Imprévue, uh oh..."
+            return "Situation Imprévue, uh oh...";
     }
 }
 
@@ -638,7 +645,7 @@ function makeEducAddCreatureSlot(){
     weaponSlot.setAttribute('aspect',"weapon");
     let validateCreatureButton = makeButton("validateCreatureButton", "OK", ()=>{
         window.UIState = "searchTarget";
-        replaceInfoLine('Apply education pattern to a creature : click on creature');
+        replaceInfoLine("Application du pattern d'éducation par l'ajout sur l'être : cliquez sur l'être");
         window.selectedFunction = (target)=>{
             window.UIState = "none";
             sendMove({

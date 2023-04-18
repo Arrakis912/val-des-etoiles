@@ -63,6 +63,7 @@ export class QueryManager{
             window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(url)}).bind(this), 5000);
             this.makeGameList(res);
             document.getElementById("welcome").textContent = `bienvenue ${starName}`;
+            document.getElementById("input_gameName").value = `Val de ${starName}`;
             document.getElementById("gameListPage").style.display = 'block';
             console.log('afterPageChange')
         })
@@ -80,7 +81,7 @@ export class QueryManager{
         let listElem = document.getElementById("GameList");
         let htmlList = '';
         gameList.forEach(game => {
-            htmlList += `<label id='${game.name}'>${game.name} (${game.rule})</label><button id="buttonJoinGame_${game.name}">Rejoindre ce val</button></br>`
+            htmlList += `<label id='${game.name}'>${game.name} (${game.rule}) [${game.started?`occupée (${game.players[0]} vs ${game.players[1]})`:"disponible"}]</label><button id="buttonJoinGame_${game.name}">Rejoindre ce val</button></br>`
         });
         listElem.innerHTML = htmlList;
         gameList.forEach(game => {
@@ -129,6 +130,7 @@ export class QueryManager{
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'exitGame', name: window.STARNAME, game:window.GAMENAME}),(res)=>{
             clearInterval(window.GAMEUPDATEINTERVAL);
             window.GAMENAME = undefined;
+            this.listUpdate(window.SERVERURL);
             window.GAMELISTUPDATEINTERVAL = setInterval((()=>{this.listUpdate(window.SERVERURL)}).bind(this), 5000);
         });
     }
