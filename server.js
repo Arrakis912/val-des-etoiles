@@ -889,6 +889,17 @@ class GameStatus{
         return visibleState;
     }
 
+    getGameListItem(){
+        let listItem = {"name": this.name, 
+            "rule": this.ruleSet,
+            "started": this.started
+        }
+        if (this.started){
+            listItem.players = this.players.map((player)=>{return player.name});
+        }
+        return listItem;
+    }
+
     addPlayer(player){
         if(!this.started){ // able to join game if game not started...
             this.players.push(player)
@@ -1307,11 +1318,11 @@ function processQuery(url, method, body){
         case "connect":{
             const starName = body.name;
             connectPlayer(starName);
-            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}})});
+            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return game.getGameListItem()})});
             break;
         }
         case "getGameList":{
-            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}})});
+            returnBody = JSON.stringify({"gameList": gameList.map((game)=>{return game.getGameListItem()})});
             break;
         }
         case "disconnect":{
@@ -1339,7 +1350,7 @@ function processQuery(url, method, body){
             const starName = body.name;
             const gameName = body.game;
             exitGame(gameName, starName);
-            returnBody = JSON.stringify(gameList.map((game)=>{return {"name": game.name, "rule": game.ruleSet}}));
+            returnBody = JSON.stringify(gameList.map((game)=>{return game.getGameListItem()}));
             break;
         }
         case "update":{
