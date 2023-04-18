@@ -352,11 +352,11 @@ class Creature{
                 for (let index = 0; index < this.magicienMarks; index++) {
                     game.interrupt({type:"multiAction", drawCount, revealCount :0});
                 }
-                game.activePlayer = activePlayerBeforeBurial;
             } else {
                 let drawCount = this.magicienMarks * (game.ruleSet.includes("Helios")?2:1);
-                game.activePlayerDraw("source", drawCount);
+                game.interrupt({type:"multiAction", drawCount, revealCount :0});
             }
+            game.activePlayer = activePlayerBeforeBurial;
         }
         return 'ok';
     }
