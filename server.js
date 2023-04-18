@@ -9,7 +9,7 @@ class Card{
         this.value = value;
         this.id = id;
         this.visibility = visibility;
-        this.isHead = (this.value === 'J' || this.value === 'V' || this.value === 'Q' || this.value === 'K')? true : false;
+        this.isHead = (this.value === 'J' || this.value === 'V' || this.value === 'D' || this.value === 'R')? true : false;
         this.attachedTo = 'Source';
     }
     getRawValue(){
@@ -18,9 +18,9 @@ class Card{
                 return 1;
             case 'V':
                 return 1;
-            case 'Q':
+            case 'D':
                 return 2;
-            case 'K':
+            case 'R':
                 return 3;
             default:
                 return this.value
@@ -35,8 +35,8 @@ function makeSource(){
             notShuffled.push(new Card(color,value));
         }
         notShuffled.push(new Card(color, 'V'));
-        notShuffled.push(new Card(color, 'Q'));
-        notShuffled.push(new Card(color, 'K'));
+        notShuffled.push(new Card(color, 'D'));
+        notShuffled.push(new Card(color, 'R'));
     })
     notShuffled.push(new Card('sang', 'J'));
     notShuffled.push(new Card('cendre', 'J'));
@@ -167,13 +167,7 @@ class Creature{
                 const owner = this.getOwner();
                 let revealCount = 1;
                 let drawCount = 1;
-                if(this.type === "fou"){
-                    drawCount+=1;
-                    if(game.ruleSet.includes("Helios")){
-                        drawCount+=1;
-                    }
-                }
-                if(this.type === "dame noire" && target.type === "river"){
+                if(this.type === "fou" || (this.type === "dame noire" && target.type === "river")){
                     drawCount+=1;
                     if(game.ruleSet.includes("Helios")){
                         drawCount+=1;
@@ -241,21 +235,22 @@ class Creature{
                 if (card.color !== color || this.head.color !== color) {//check if not Homme Liges
                     errorState = this.handleInvalidCardReveal(color);//if none, bad card
                 }
-            }else if(card.value === 'Q'){
-                if(this.head.value !== 'K' || this.head.color !== card.color || color !== "heart"){//check lovers
+            }else if(card.value === 'D'){
+                if(this.head.value !== 'R' || this.head.color !== card.color || color !== "heart"){//check lovers
                     errorState = this.handleInvalidCardReveal(color);
                 }
                 else{
                     errorState = this.ripCard(color);
                     this.type = "spectre royal";
                 }
-            }else if(card.value === 'K'){
-                if(this.head.value !== 'Q' || this.head.color !== card.color || color !== "heart"){// check lovers
+            }else if(card.value === 'R'){
+                if(this.head.value !== 'D' || this.head.color !== card.color || color !== "heart"){// check lovers
                     errorState = this.handleInvalidCardReveal(color);
                 }
                 else{
                     errorState = this.ripCard(color);
                     this.type = "dame noire";
+                    this.lostOne = card;
                 }
             }else if(card.color !== color && card.value !== 'J'){
                 errorState = this.handleInvalidCardReveal(color);
@@ -286,6 +281,7 @@ class Creature{
         }
         else{
             console.error("What the fuck, that card should not be here, cheater!");
+            owner.damage(100);
         }
         return this.ripCard(color);
     }
@@ -308,12 +304,14 @@ class Creature{
         }
         const previouslySpectralOrDamne = (this.isSpectral() || this.type === "damne");
         const owner = this.getOwner();
+        let lostDauphin = undefined;
         if(color === "heart"){
             if (this.type === "enfant") {
                 owner.getOpponent().damage(5);
             }
             if (this.head.color === "heart" && this.heart.value === "V" && this.heart.color === "heart"){
                 owner.getOpponent().damage(5);
+                lostDauphin = this.heart;
             }
         }
         const game = this.getGame();
@@ -322,6 +320,16 @@ class Creature{
         if(this.type === "spectre"){
             owner.damage(5);
             owner.hasSpectre = true;
+            if (lostDauphin !== undefined){
+                if(this.head.value == 'R'){
+                    this.type = "spectre royal";
+                } else if (this.head.value == 'D') {
+                    this.type = "dame noire";
+                    this.lostOne = lostDauphin;
+                } else {
+                    console.error("THIS SHOULD NEVER HAPPEN, INVALID LOSS OF DAUPHIN");
+                }
+            }
         }
         let activePlayerBeforeBurial = game.activePlayer;
         if(this.type === undefined){
@@ -418,10 +426,10 @@ class Creature{
                 case 'V':
                     baseValue += 1;
                     break;
-                case 'Q':
+                case 'D':
                     baseValue += 2;
                     break;
-                case 'K':
+                case 'R':
                     baseValue += 3;
                     break;
                 default:
@@ -657,9 +665,9 @@ class PlayerStatus{
                 const game = this.getGame();
                 let drawCount = 1;
                 let revealCount = 1;
-                if (card.value == 'Q') {
+                if (card.value == 'D') {
                     revealCount = 2;
-                } else if (card.value == 'K') {
+                } else if (card.value == 'R') {
                     revealCount = 3;
                 }
                 if(target.type ==="river" && !this.hasSpectre){
@@ -964,7 +972,7 @@ class GameStatus{
             this.drawStartingHandsAndDefineActivePlayer();
             bothPlayersHaveHead = this.checkStartingHandsValidity();
             if(!bothPlayersHaveHead){
-                console.log("Redoing Sunset as no head in a")
+                console.log("Redoing Sunset as no head in a hand")
             }
         }
         this.phase = 0;
