@@ -458,6 +458,10 @@ function makeCard(card,base_revealed=true){
             console.log(`unrecognised visibility value ${card.visibility} in card ${card.id}, must be an opponent peaking at card`);
             spiedOn = true;
     }
+    const gameStatus = window.GAMESTATUS;
+    if((gameStatus.phase === -2) && (gameStatus.interuptionObject.type === "victory")){// if game ended, reveal everything
+        revealed = true;
+    }
     let cardElem;
     if (revealed) {
         cardElem = document.createElement('label');
