@@ -20,7 +20,7 @@ body{
     --creature-height: calc(3 * var(--card-height-with-border));
     --creature-width: calc(3 * var(--card-width-with-border));
     --source-top: calc(5 * var(--card-height));
-    --creature-margin: 5px;
+    --creature-margin: 9px;
 }
 label{
     text-align: center;
