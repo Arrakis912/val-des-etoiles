@@ -29,6 +29,10 @@ class Card{
     getSortingValue(){
         let value = this.getRawValue();
         ['heart','weapon','power','spirit'];
+        if(this.visibility === 'Active'){
+            //don't order revealed cards in the middle of the rest !!!
+            value += 100;
+        }
         if(this.isHead){
             value += 50;
         }
@@ -922,7 +926,7 @@ class PlayerStatus{
     }
 
     sortHand(){
-        this.hand.sort((cardA,cardB)=>cardB.getSortingValue()-cardA.getSortingValue());
+        this.hand.sort((cardA,cardB)=>cardA.getSortingValue()-cardB.getSortingValue());
     }
 
 }
