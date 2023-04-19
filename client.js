@@ -226,6 +226,10 @@ function clickExitGameButton(){
     backToList();
 }
 
+function clickSortHandButton(){
+    QueryManager.sortHandRequest();
+}
+
 function sendMove(move){
     QueryManager.playRequest(move);
     window.playerIsActive = false;
@@ -386,6 +390,9 @@ function makePlayerHand(gameStatus, playerId, isOp){
     gameStatus.players[playerId].hand.forEach(card => {
         hand.appendChild(makeCard(card, !isOp));
     });
+    if(!isOp){
+        hand.appendChild(makeButton("sortHandButton", "Trier Main", clickSortHandButton));
+    }
     return hand;
 }
 

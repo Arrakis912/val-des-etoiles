@@ -26,6 +26,45 @@ class Card{
                 return this.value
         }
     }
+    getSortingValue(){
+        let value = this.getRawValue();
+        ['heart','weapon','power','spirit'];
+        if(this.isHead){
+            value += 50;
+        }
+        switch(this.color){
+            case 'heart':{
+                value += 10;
+                break;
+            }
+            case 'weapon':{
+                value += 20;
+                break;
+            }
+            case 'power':{
+                value += 30;
+                break;
+            }
+            case 'spirit':{
+                value += 40;
+                break;
+            }
+            //jokers will be the only heads without a color bonus, so the only ones in the 50's
+            case 'sang':{
+                value += 1;
+                break;
+            }
+            case 'cendre':{
+                value += 2;
+                break;
+            }
+            default:{
+                //should never happen
+                break;
+            }
+        }
+        return value;
+    }
 }
 
 function makeSource(){
@@ -882,6 +921,10 @@ class PlayerStatus{
         }
     }
 
+    sortHand(){
+        this.hand.sort((cardA,cardB)=>cardB.getSortingValue()-cardA.getSortingValue());
+    }
+
 }
 
 class GameStatus{
@@ -1400,10 +1443,17 @@ function processQuery(url, method, body){
             returnBody = JSON.stringify({"gameState":getGameVisibleStatus(gameName, starName)});
             break;
         }
+        case "sortHand":{
+            const starName = body.name;
+            const gameName = body.game;
+            sortHand(starName,gameName);
+            returnBody = JSON.stringify({"gameState":getGameVisibleStatus(gameName, starName)});
+            break;
+        }
         case "play": {
             const starName = body.name;
             const star = playerList.find((elem)=>elem.name === starName);
-            const game = gameList.find((elem)=>elem.name === star.game)
+            const game = gameList.find((elem)=>elem.name === star.game);
             if(undefined === star){
                 returnBody = JSON.stringify({status : "KO", error:"unknown player"});
                 break;
@@ -1479,6 +1529,17 @@ function exitGame(gameName, starName){
             player.game = undefined;
             game.removePlayer(player);
         }
+    }
+}
+
+function sortHand(starName,gameName){
+    
+    const star = playerList.find((elem)=>elem.name === starName);
+    const game = gameList.find((elem)=>elem.name === star.game);
+    if(game.name === gameName){
+        star.sortHand();
+    } else {
+        console.error("tried to sort hand in a different game than the active one");
     }
 }
 

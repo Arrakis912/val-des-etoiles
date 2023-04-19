@@ -166,6 +166,17 @@ export class QueryManager{
         }
     }
 
+    static sortHandRequest(){
+        this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'sortHand', name: window.STARNAME, game: window.GAMENAME}),(res)=>{
+            // console.log(`got update : ${res}`);
+            if (JSON.stringify(window.GAMESTATUS) !== res) {
+                window.GAMESTATUS = JSON.parse(res)["gameState"];
+                if(window.GAMESTATUS.started){
+                    window.UPDATEUI = true;
+                }
+            }
+        });
+    }
 }
 
 QueryManager.init()
