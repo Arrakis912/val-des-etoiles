@@ -41,11 +41,11 @@ class Card{
                 value += 20;
                 break;
             }
-            case 'power':{
+            case 'spirit':{
                 value += 30;
                 break;
             }
-            case 'spirit':{
+            case 'power':{
                 value += 40;
                 break;
             }
