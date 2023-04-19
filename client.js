@@ -247,13 +247,18 @@ function updateUI(){
     const oldStatus = window.PREVIOUSGAMESTATUS;
     const gameStatus = window.GAMESTATUS;
     const activePlayerName = gameStatus.players[gameStatus.activePlayer].name;
-    const playerIndex = gameStatus.players.findIndex((elem)=>elem.name===window.STARNAME);
-    window.playerIsActive = (window.STARNAME === activePlayerName);
-    if(gameStatus.interuptionObject !== undefined){
-        if(gameStatus.interuptionObject.type === "victory"){
-            //override activity to avoid any future update query
-            window.playerIsActive = true;
+    let playerIndex = gameStatus.players.findIndex((elem)=>elem.name===window.STARNAME);
+    if(playerIndex !== -1){
+        window.playerIsActive = (window.STARNAME === activePlayerName);
+        if(gameStatus.interuptionObject !== undefined){
+            if(gameStatus.interuptionObject.type === "victory"){
+                //override activity to avoid any future update query
+                window.playerIsActive = true;
+            }
         }
+    } else {//Spectating a game you aren't part of
+        playerIndex = 0;
+        window.playerIsActive = false;
     }
     let opIndex = (playerIndex + 1)%gameStatus.players.length;
     let gameBoard = document.getElementById("gameBoard");
@@ -387,11 +392,20 @@ function makePlayerHand(gameStatus, playerId, isOp){
     hand.setAttribute('id', `${isOp?"Op":""}Hand`);
     hand.classList.add('hand');
     hand.appendChild(makeRayLabel(gameStatus, playerId, isOp));
-    gameStatus.players[playerId].hand.forEach(card => {
-        hand.appendChild(makeCard(card, !isOp));
+    let player = gameStatus.players[playerId];
+    player.hand.forEach(card => {
+        hand.appendChild(makeCard(card, !(isOp || (player.name !== window.STARNAME))));
     });
-    if(!isOp){
-        hand.appendChild(makeButton("sortHandButton", "Trier Main", clickSortHandButton));
+    if(player.name !== window.STARNAME){//Spectating
+        let playerNameTag = document.createElement('label');
+        playerNameTag.setAttribute('id',`${player.name}_nameTag`);
+        playerNameTag.innerHTML = `${player.name}`;
+        hand.appendChild(playerNameTag);
+    }
+    else {//actual player
+        if(!isOp){
+            hand.appendChild(makeButton("sortHandButton", "Trier Main", clickSortHandButton));
+        }
     }
     return hand;
 }

@@ -981,13 +981,15 @@ class GameStatus{
             if (this.players.findIndex((elem)=>elem.name === player.name) != -1) {
                 clearTimeout(this.timeout);
                 this.timeout = undefined;
+            } else {
+                //OR, if game started and player isn't one of those inside, spectate ! (does nothing special here)
             }
         }
     }
 
     removePlayer(player){
         if(this.players.findIndex((elem)=>elem.name===player.name)==-1){
-            console.error("trying to remove star "+player+" from game "+this.name+" but it isn't a player of that game...")
+            console.log("trying to remove star "+player.name+" from game "+this.name+" but it isn't a player of that game...Spectator? Doing nothing.")
             return;
         }
         if(!this.started){
