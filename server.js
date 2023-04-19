@@ -1170,11 +1170,18 @@ class GameStatus{
                         }
                         let owner = target.isOp?this.players[1-this.activePlayer]:this.players[this.activePlayer];
                         let creature = owner.creatures.find(elem=>(elem.id===target.creatureId));
+                        this.interuptionObject.revealCount -=1;
                         let errorState = creature.revealCard(target.aspect, this.players[this.activePlayer].name);
                         if(errorState !== 'ok'){
+                            this.interuptionObject.revealCount +=1;
                             return {status : "KO", error : errorState};
                         }
-                        this.interuptionObject.revealCount -=1;
+                        // Handle case when revealing triggered a burial and so the interuption has changed
+                        if(this.interuptionObject.type ==="bury"){
+                            if(this.checkMultiActionCompletion(this.interuptionObject.previousInterruption)){
+                                this.removePreviousInterrupt();
+                            }
+                        }
                         break;
                     }
                     case "attack":{//attack in multiaction only with the cendre joker, so its a 1 of weapon
@@ -1205,7 +1212,9 @@ class GameStatus{
                     default:
                         return {status : "KO", error : `invalid action : ${actionType}`};
                 }
-                this.checkMultiActionCompletion();
+                if(this.checkMultiActionCompletion(this.interuptionObject)){
+                    this.unInteruptFlow();
+                }
                 break;
             }
             default:
@@ -1271,14 +1280,23 @@ class GameStatus{
         this.interuptionObject = previousInt;
     }
 
-    checkMultiActionCompletion(){
-        let inter = this.interuptionObject;
+    removePreviousInterrupt(){
+        const previousInt = this.interuptionObject.previousInterruption;
+        if(previousInt === undefined){
+            console.error("should not be trying to remove an undefined previous interrupt...");
+            return;
+        }
+        this.interuptionObject.phase = previousInt.phase;
+        this.interuptionObject.activePlayer = previousInt.activePlayer;
+        this.interuptionObject.interuptionObject = previousInt.previousInterruption;
+    }
+
+    checkMultiActionCompletion(inter){
         if( inter === undefined){
             console.error('should not call this function')
             return true;
         }
         if (inter.type === "multiAction" && inter.drawCount === 0 && inter.revealCount === 0 && !inter.attack) {
-            this.unInteruptFlow();
             return true;
         }
         return false;
