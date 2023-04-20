@@ -180,6 +180,14 @@ function selectCard(cardElem, cardId){
     }
 }
 
+function clickButtonDevour(){
+    window.savedUIState = window.UIState;
+    window.UIState = "searchTarget";
+    window.selectedFunction = (target)=>{
+        sendMove({type:"saturnDevour", target});
+    }
+}
+
 function clickGameButtonSkip(){
     const game = window.GAMESTATUS;
     if (game.phase===1){
@@ -312,6 +320,10 @@ function makeButtonLine(gameStatus, playerIsActive){
                 line.appendChild(makeButton("createCreatureButton", "Engendrer", clickCreateCreatureButton));
                 line.appendChild(makeButton("educateButton", "Echange", clickEducateButton));
                 line.appendChild(makeButton("educateAddButton", "Ajout", clickEducAddButton));
+                const activePlayer = gameStatus.players[gameStatus.activePlayer];
+                if((!gameStatus.saturnHasDevoured)&&(activePlayer.name === "Saturne" || activePlayer.name === 'Jupiter' || activePlayer.name === 'Mars' || activePlayer.name === 'Venus' || activePlayer.name === 'Mercure' || activePlayer.name === 'Selene')){
+                    line.appendChild(makeButton("devourButton", "Devorer", clickButtonDevour));
+                }
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
             line.appendChild(makeButton("skipRevealButton", "Passer Revel.", ()=>{

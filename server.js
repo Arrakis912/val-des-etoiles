@@ -817,21 +817,39 @@ class PlayerStatus{
         }
         let creature = undefined;
         if(target.isOp){
-            return "non mirror can't educate opponent. Mirror educating capacities not implemented."
-            //TODO
-            creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+            if(this.name === 'Uranus' || this.name === 'Saturne' || this.name === 'Jupiter' || this.name === 'Mars' || this.name === 'Venus' || this.name === 'Mercure' || this.name === 'Selene'){
+                //Condescendance d'Uranus. Une fois par nuit => flag. ET => +25 majesté à l'adversaire
+                let game = this.getGame();
+                if(!game.uranusFlag){
+                    let opponent = this.getOpponent();
+                    creature = opponent.creatures.find((elem)=> elem.id === target.creatureId);
+                    if(creature === undefined){
+                        return 'unable to find target creature'
+                    }
+                    opponent.heal(25);
+                    game.uranusFlag = true;
+                } else {
+                    return "only one use of Uranus's power per game";
+                }
+            } else {
+                return "can't educate opponent creatures";
+            }
+
         } else {
             creature = this.creatures.find((elem)=> elem.id === target.creatureId);
-        }
-        if(creature === undefined){
-            return 'unable to find target creature'
+            if(creature === undefined){
+                return 'unable to find target creature'
+            }
         }
         if(target.aspect === "head"){
-            return 'cant educate the head except for mirrors. Mirror education capacities not implemented'
-            //TODO
-        }
-        if(card.isHead){
-
+            //Metamorphose de Neptune
+            if(this.name === 'Neptune' || this.name === 'Uranus' || this.name === 'Saturne' || this.name === 'Jupiter' || this.name === 'Mars' || this.name === 'Venus' || this.name === 'Mercure' || this.name === 'Selene'){
+                if(!card.isHead){
+                    return "can't place non-head card as head";
+                }
+            } else {
+                return "can't educate the head";
+            }
         }
         this.obtainCard(creature[target.aspect]);
         creature[target.aspect] = card;
@@ -927,6 +945,37 @@ class PlayerStatus{
 
     sortHand(){
         this.hand.sort((cardA,cardB)=>cardA.getSortingValue()-cardB.getSortingValue());
+    }
+
+    devourChild(target){
+        if(!(this.name === 'Saturne' || this.name === 'Jupiter' || this.name === 'Mars' || this.name === 'Venus' || this.name === 'Mercure' || this.name === 'Selene')){
+            return "this star can't devour";
+        }
+        if(target.type !== "creature"){
+            return "can't devour non-creature";
+        }
+        let creature = undefined;
+        if(!target.isOp){
+            creature = this.creatures.find((elem)=> elem.id === target.creatureId);
+        } else {
+            creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+        }
+        if(creature === undefined){
+            return 'unable to find target creature';
+        }
+        if(creature.type !== "enfant"){
+            return "can't devour non-child";
+        }
+        let game = this.getGame();
+        if(game.saturnHasDevoured){
+            return "Can only devour once per night !"
+        }
+        let returnCode = creature.ripCard("heart");
+        if(returnCode === "ok"){
+            this.damage(5);
+            game.saturnHasDevoured = true;
+        }
+        return returnCode;
     }
 
 }
@@ -1098,6 +1147,23 @@ class GameStatus{
                     this.phase = 0;
                     return {status: "KO", error : returnMessage}
                 }
+                break;
+            }
+            case "saturnDevour":{
+                if (this.phase != 0) {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                }
+                const target = moveDescription.target;
+                let player = this.players[playerId];
+                const returnMessage = player.devourChild(target);
+                if (returnMessage !== 'ok') {
+                    return {status: "KO", error : returnMessage}
+                }
+                //As their is no phase to draw in this implementation, we just go to the end of creature's phase, where the only action left is to end turn
+                player.creatures.forEach(creature=>{
+                    creature.resting = true;
+                })
+                this.phase = 1;
                 break;
             }
             case "educate":{
