@@ -135,6 +135,14 @@ function clickCard(cardId, value, color){
                     }
                     break;
                 }
+                case "condemnation":{
+                    if (creatureId === window.GAMESTATUS.interuptionObject.creature.id) {
+                        sendMove({type:"condemn", aspect});
+                    } else {
+                        console.log(`clicked on creature which isn't the one we are judging`)
+                    }
+                    break;
+                }
                 case "multiAction":{
                     if(window.GAMESTATUS.interuptionObject.revealCount>0){
                         sendMove({type:"resolveMultiAction", action: "reveal", target : {type : "creature", isOp, creatureId, aspect}});
@@ -365,6 +373,8 @@ function textInstruction(gameStatus){
             const type = gameStatus.interuptionObject.type;
             if(type === "bury"){
                 return "Enterrement : clicker sur la prochaine carte à envoyer à la rivière."
+            } else if (type === "condemnation") {
+                return "Jugement dernier réussi : clicker sur la carte à envoyer à la rivière";
             } else if (type === "victory") {
                 return `${(gameStatus.interuptionObject.winner === window.STARNAME)?"VICTOIRE!":("Défaite, "+gameStatus.interuptionObject.winner+" a gagné")}`;
             } else if (type === "multiAction") {

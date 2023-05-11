@@ -911,6 +911,38 @@ class PlayerStatus{
         this.removeCardsFromHand(Object.keys(cardIndexes).map((elem)=>cardIndexes[elem]));
         return "ok"
     }
+    
+    jupiterJudge(pattern, target){
+        let game = this.getGame();
+        if(game.jupiterHasJudged){
+            return "Can only judge once per night !"
+        }
+        let creature = undefined;
+        if(target.isOp){
+            creature = this.getOpponent().creatures.find((elem)=> elem.id === target.creatureId);
+        } else {
+            creature = this.creatures.find(elem=>(elem.id === target.creatureId));
+        }
+        
+        if(creature === undefined || creature.id === undefined){
+            return "unable to find targetted creature";
+        }
+        let judgment = true;
+        ['heart', 'weapon', 'spirit', 'power'].forEach(elem => {
+            if(creature[elem] !== undefined){
+                judgment = judgment && (creature[elem].color===pattern[elem].color) && (`${creature[elem].value}`===pattern[elem].value);
+                creature.revealCard(elem);
+            }
+        }, this);
+        if(judgment){
+            //TODO : Handle the case where the revealing of cards trashed an invalid card, and possibly initiated burial already.... 
+            //Actually if card is alreayd trashed, jupiter is supposedly allowed to chose which card goes next to the grave, so nothing to fix in the interrupt order, I think...
+            this.getGame().interrupt({type:"condemnation", creature});
+            //TODO : handle this kind of interruption, both here and in client !
+        }
+        game.jupiterHasJudged = true;
+        return "ok"
+    }
 
     removeCardsFromHand(indexList){
         let filteredIndexList = indexList.filter((index)=>{
@@ -1168,8 +1200,15 @@ class GameStatus{
                 break;
             }
             case "jupiterJudge":{
-                //TODO
-                return {status: "KO", error : "Judging not implemented serverSide"}
+                if (this.phase != 0) {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase}`};
+                }
+                this.phase = 1;
+                const returnMessage = this.players[playerId].jupiterJudge(moveDescription.pattern, moveDescription.target);
+                if(returnMessage !== "ok"){
+                    this.phase = 0;
+                    return {status: "KO", error : returnMessage}
+                }
                 break;
             }
             case "educate":{
@@ -1227,6 +1266,16 @@ class GameStatus{
             }
             case "buryCard":{
                 if (this.phase != -2 || this.interuptionObject === undefined || this.interuptionObject.type !=="bury") {
+                    return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interuptionObject}`};
+                }
+                this.interuptionObject.creature.buryCard(moveDescription.aspect);
+                if (this.interuptionObject.creature.endOfBurial(false)) {
+                    this.unInteruptFlow();
+                }
+                break;
+            }
+            case "condemn":{
+                if (this.phase != -2 || this.interuptionObject === undefined || this.interuptionObject.type !=="condemnation") {
                     return {status : "KO", error : `move type : ${moveDescription.type} impossible in phase number ${this.phase} with interruption : ${this.interuptionObject}`};
                 }
                 this.interuptionObject.creature.buryCard(moveDescription.aspect);
