@@ -463,6 +463,7 @@ class Creature{
             }
         }
         if(this.head.value === 'J'){
+            //TODO : handle Mars's rule "God and Me"
             baseValue += 1;
         } else if(this.head.color === color){
             switch (this.head.value) {
@@ -1164,6 +1165,11 @@ class GameStatus{
                     creature.resting = true;
                 })
                 this.phase = 1;
+                break;
+            }
+            case "jupiterJudge":{
+                //TODO
+                return {status: "KO", error : "Judging not implemented serverSide"}
                 break;
             }
             case "educate":{

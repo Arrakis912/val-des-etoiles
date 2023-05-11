@@ -188,6 +188,16 @@ function clickButtonDevour(){
     }
 }
 
+function clickButtonJudge(){
+    replaceInfoLine("Jugement : Selectionnez les valeurs dans le modèle (dans le sens de VOS etres), VALIDER, puis cliquez sur l'être à juger.")
+    if(!(window.UIState === "judging")){
+        let versant = document.getElementById('Versant');
+        window.UIState = "none";
+        versant.appendChild(makeJudgeCreatureSlot());
+        window.UIState = "addToCreature";
+    }
+}
+
 function clickGameButtonSkip(){
     const game = window.GAMESTATUS;
     if (game.phase===1){
@@ -323,6 +333,9 @@ function makeButtonLine(gameStatus, playerIsActive){
                 const activePlayer = gameStatus.players[gameStatus.activePlayer];
                 if((!gameStatus.saturnHasDevoured)&&(activePlayer.name === "Saturne" || activePlayer.name === 'Jupiter' || activePlayer.name === 'Mars' || activePlayer.name === 'Venus' || activePlayer.name === 'Mercure' || activePlayer.name === 'Selene')){
                     line.appendChild(makeButton("devourButton", "Devorer", clickButtonDevour));
+                }
+                if((!gameStatus.jupiterHasJudged)&&(activePlayer.name === 'Jupiter' || activePlayer.name === 'Mars' || activePlayer.name === 'Venus' || activePlayer.name === 'Mercure' || activePlayer.name === 'Selene')){
+                    line.appendChild(makeButton("judgeButton", "Judge", clickButtonJudge));
                 }
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
@@ -642,6 +655,78 @@ function makeCreatureSlot(){
     return creatureElem;
 }
 
+function makeJudgeCreatureSlot(){
+    let creatureElem = document.createElement('div');
+    creatureElem.setAttribute('id','CreatureCreator');
+    
+    let spiritRow = document.createElement('div');
+    spiritRow.classList.add("CreatureCreatorRow");
+    let mainRow = document.createElement('div');
+    mainRow.classList.add("CreatureCreatorRow");
+    let powerRow = document.createElement('div');
+    powerRow.classList.add("CreatureCreatorRow");
+    
+    const heartSlot = makeJudgingSlot("heart");
+    
+    let cancelCreatureButton = makeButton("cancelCreatureButton", "🗙", ()=>{
+        window.UIState = "none";
+        creatureElem.remove();
+    })
+    cancelCreatureButton.classList.remove("gameButton");
+    cancelCreatureButton.classList.add("creatorButton");
+
+    spiritRow.appendChild(cancelCreatureButton);
+    mainRow.appendChild(heartSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
+    
+    const spiritSlot = makeJudgingSlot("spirit");
+    const powerSlot = makeJudgingSlot("power");
+    spiritRow.appendChild(spiritSlot);
+    mainRow.appendChild(makeCreatureVoidFiller());
+    powerRow.appendChild(powerSlot);
+    
+    const weaponSlot = makeJudgingSlot("weapon");
+    let validateCreatureButton = makeButton("validateCreatureButton", "OK", ()=>{
+        window.UIState = "searchTarget";
+        replaceInfoLine("Application du pattern de jugement l'être : cliquez sur l'être à juger");
+        window.selectedFunction = (target)=>{
+            window.UIState = "none";
+            sendMove({
+                type: "jupiterJudge",
+                target,
+                pattern:{
+                    "heart":{
+                        value : document.getElementById('judge_input_heart_value').value,
+                        color : document.getElementById('judge_input_heart_color').value
+                    },
+                    "weapon":{
+                        value : document.getElementById('judge_input_weapon_value').value,
+                        color : document.getElementById('judge_input_weapon_color').value
+                    },
+                    "spirit":{
+                        value : document.getElementById('judge_input_spirit_value').value,
+                        color : document.getElementById('judge_input_spirit_color').value
+                    },
+                    "power":{
+                        value : document.getElementById('judge_input_power_value').value,
+                        color : document.getElementById('judge_input_power_color').value
+                    }
+                }
+            });
+        }
+    });
+    validateCreatureButton.classList.remove("gameButton");
+    validateCreatureButton.classList.add("creatorButton");
+
+    spiritRow.appendChild(validateCreatureButton);
+    mainRow.appendChild(weaponSlot);
+    powerRow.appendChild(makeCreatureVoidFiller());
+
+    creatureElem.appendChild(spiritRow);
+    creatureElem.appendChild(mainRow);
+    creatureElem.appendChild(powerRow);
+    return creatureElem;
+}
 
 function makeEducAddCreatureSlot(){
     let creatureElem = document.createElement('div');
@@ -726,6 +811,38 @@ function makeSlot(){
             window.selectedCard = undefined;
         }
     });
+    return slotElem;
+}
+
+function makeJudgingSlot(slotName){
+    let slotElem = document.createElement('label');
+    slotElem.classList.add('slot');
+    slotElem.innerHTML = `
+    <select id="judge_input_${slotName}_value">
+        <option value="J">☻</option>
+        <option value="V">V</option>
+        <option value="D">D</option>
+        <option value="R">R</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+    </select>
+    <select id="judge_input_${slotName}_color">
+        <option value="heart" ${slotName=="heart"?"selected":""}>♥</option>
+        <option value="weapon" ${slotName=="weapon"?"selected":""}>♠</option>
+        <option value="spirit" ${slotName=="spirit"?"selected":""}>♦</option>
+        <option value="power" ${slotName=="power"?"selected":""}>♣</option>
+        <option value="cendre">✟</option>
+        <option value="sang">⛧</option>
+    </select>`;
+    slotElem.setAttribute('aspect',slotName);
     return slotElem;
 }
 
