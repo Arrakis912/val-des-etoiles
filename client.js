@@ -343,7 +343,7 @@ function makeButtonLine(gameStatus, playerIsActive){
                     line.appendChild(makeButton("devourButton", "Devorer", clickButtonDevour));
                 }
                 if((!gameStatus.jupiterHasJudged)&&(activePlayer.name === 'Jupiter' || activePlayer.name === 'Mars' || activePlayer.name === 'Venus' || activePlayer.name === 'Mercure' || activePlayer.name === 'Selene')){
-                    line.appendChild(makeButton("judgeButton", "Judge", clickButtonJudge));
+                    line.appendChild(makeButton("judgeButton", "Juger", clickButtonJudge));
                 }
             }
         } else if (gameStatus.phase === -2 && window.GAMESTATUS.interuptionObject.type === "multiAction") {
