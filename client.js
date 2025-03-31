@@ -7,7 +7,7 @@ function updateUIInterval(){
     }
 }
 
-function connect(){
+export function connect(){
     const name = document.getElementById('input_name').value;
     // const url = "localhost:8081";
     const url = "51.38.238.74:8081";
@@ -17,13 +17,13 @@ function connect(){
     window.updateInterval = setInterval(updateUIInterval, 500);
 }
 
-function makeNewGame(){
+export function makeNewGame(){
     const ruleSet = document.getElementById('input_ruleSet').value;
     const gameName = document.getElementById('input_gameName').value;
     QueryManager.makeGameRequest(gameName, ruleSet);
 }
 
-function backToList(){
+export function backToList(){
     QueryManager.exitGameRequest();
     let gameBoard = document.getElementById("gameBoard");
     gameBoard.innerHTML='<label id="gameInfo"></label><br><br><button id="backToListButton">Retour a la liste des Parties</button>';
@@ -31,7 +31,7 @@ function backToList(){
     document.getElementById("gameListPage").style.display = 'block';
 }
 
-function disconnect(){
+export function disconnect(){
     QueryManager.disconnectRequest();
     document.getElementById("gameListPage").style.display = 'none';
     document.getElementById("initPage").style.display = 'block';
@@ -539,7 +539,7 @@ function makeSymbolFromColor(color){
     }
 }
 
-function makeCreature(creature, isOp){
+function makeCreature(creature, isOp) {
     let creatureElem = document.createElement('div');
     creatureElem.setAttribute('id', `Creature_${creature.id}`);
     creatureElem.classList.add('creature');
@@ -549,18 +549,18 @@ function makeCreature(creature, isOp){
     }
     
     let spiritRow = document.createElement('div');
-    spiritRow.style = `display: flex; flex-direction: row${isOp?"-reverse":""};`;
+    spiritRow.style = `display: flex; flex-direction: row${isOp ? "-reverse" : ""};`;
     spiritRow.setAttribute('id', `Creature_${creature.id}_spiritRow`);
     let mainRow = document.createElement('div');
-    mainRow.style = `display: flex; flex-direction: row${isOp?"-reverse":""};`;
+    mainRow.style = `display: flex; flex-direction: row${isOp ? "-reverse" : ""};`;
     mainRow.setAttribute('id', `Creature_${creature.id}_mainRow`);
     let powerRow = document.createElement('div');
-    powerRow.style = `display: flex; flex-direction: row${isOp?"-reverse":""};`;
+    powerRow.style = `display: flex; flex-direction: row${isOp ? "-reverse" : ""};`;
     powerRow.setAttribute('id', `Creature_${creature.id}_powerRow`);
-    
+
     if (creature.heart !== undefined) {
         const heartCard = makeCard(creature.heart, false);
-        heartCard.setAttribute('aspect',"heart");
+        heartCard.setAttribute('aspect', "heart");
         mainRow.appendChild(heartCard);
         if (creature.spirit !== undefined) {
             spiritRow.appendChild(makeCreatureVoidFiller());
@@ -571,22 +571,22 @@ function makeCreature(creature, isOp){
     }
     if (creature.spirit !== undefined) {
         const spiritCard = makeCard(creature.spirit, false);
-        spiritCard.setAttribute('aspect',"spirit");
+        spiritCard.setAttribute('aspect', "spirit");
         spiritRow.appendChild(spiritCard);
     }
     if (creature.head !== undefined) {
         const headCard = makeCard(creature.head);
-        headCard.setAttribute('aspect',"head");
+        headCard.setAttribute('aspect', "head");
         mainRow.appendChild(headCard);
     }
     if (creature['power'] !== undefined) {
         const powerCard = makeCard(creature['power'], false);
-        powerCard.setAttribute('aspect',"power");
+        powerCard.setAttribute('aspect', "power");
         powerRow.appendChild(powerCard);
     }
     if (creature.weapon !== undefined) {
         const weaponCard = makeCard(creature.weapon, false);
-        weaponCard.setAttribute('aspect',"weapon");
+        weaponCard.setAttribute('aspect', "weapon");
         mainRow.appendChild(weaponCard);
         if (creature.spirit !== undefined) {
             spiritRow.appendChild(makeCreatureVoidFiller());
@@ -598,7 +598,6 @@ function makeCreature(creature, isOp){
     creatureElem.appendChild(spiritRow);
     creatureElem.appendChild(mainRow);
     creatureElem.appendChild(powerRow);
-
     return creatureElem;
 }
 
@@ -856,6 +855,88 @@ function makeJudgingSlot(slotName){
     return slotElem;
 }
 
+export function displayFormation(formationType) {
+    const formation = {
+        head: new Card('sang', 'J', 'Active'),
+        type: "demo",
+        heart: formationType.includes('heart') ? new Card('heart', 'A', 'Active') : undefined,
+        weapon: formationType.includes('weapon') ? new Card('weapon', 'A', 'Active') : undefined,
+        spirit: formationType.includes('spirit') ? new Card('spirit', 'A', 'Active') : undefined,
+        power: formationType.includes('power') ? new Card('power', 'A', 'Active') : undefined,
+    };
+
+    const creatureElem = makeCreature(formation, false);
+    creatureElem.setAttribute('id', `Formation_${formationType}`);
+    return creatureElem;
+}
+
+class Card{
+    constructor(color, value, visibility="None", id = undefined){
+        this.color = color;
+        this.value = value;
+        this.id = id;
+        this.visibility = visibility;
+        this.isHead = (this.value === 'J' || this.value === 'V' || this.value === 'D' || this.value === 'R')? true : false;
+        this.attachedTo = 'Source';
+    }
+    getRawValue(){
+        switch (this.value) {
+            case 'J':
+                return 1;
+            case 'V':
+                return 1;
+            case 'D':
+                return 2;
+            case 'R':
+                return 3;
+            default:
+                return this.value
+        }
+    }
+    getSortingValue(){
+        let value = this.getRawValue();
+        ['heart','weapon','power','spirit'];
+        if(this.visibility === 'Active'){
+            //don't order revealed cards in the middle of the rest !!!
+            value += 100;
+        }
+        if(this.isHead){
+            value += 50;
+        }
+        switch(this.color){
+            case 'heart':{
+                value += 10;
+                break;
+            }
+            case 'weapon':{
+                value += 20;
+                break;
+            }
+            case 'spirit':{
+                value += 30;
+                break;
+            }
+            case 'power':{
+                value += 40;
+                break;
+            }
+            //jokers will be the only heads without a color bonus, so the only ones in the 50's
+            case 'sang':{
+                value += 1;
+                break;
+            }
+            case 'cendre':{
+                value += 2;
+                break;
+            }
+            default:{
+                //should never happen
+                break;
+            }
+        }
+        return value;
+    }
+}
 // function moveCard(id,left,top){
 //     card = document.getElementById(`Card_${id}`);
 //     card.style.left = left;
@@ -869,8 +950,3 @@ function makeJudgingSlot(slotName){
 //     card = document.getElementById(`Card_${id}`);
 //     card.textContent = `Back`;
 // }
-
-document.getElementById('connectButton').addEventListener('click', connect);
-document.getElementById('newGameButton').addEventListener('click', makeNewGame);
-document.getElementById('backToListButton').addEventListener('click', backToList);
-document.getElementById('DisconnectButton').addEventListener('click', disconnect);

@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="val.css">
     <!-- Packed application javascript -->
-    <script type="module" src="./client.js"></script>
+    <script type="module">
+        import { connect,makeNewGame,backToList,disconnect } from './client.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('connectButton').addEventListener('click', connect);
+            document.getElementById('newGameButton').addEventListener('click', makeNewGame);
+            document.getElementById('backToListButton').addEventListener('click', backToList);
+            document.getElementById('DisconnectButton').addEventListener('click', disconnect);
+        });
+    </script>
 </head>
 <body>
 
@@ -15,6 +23,8 @@
         <!-- <label for="fname">Serveur</label>
         <input type="text" id="input_url" value="localhost:8080"><br><br> -->
         <button id="connectButton">Se connecter</button>
+        <button id="rulesButton" onclick="window.location.href='rules.html'">Regles</button>
+        <button id="countersButton" onclick="window.location.href='counters.html'">Majeste</button>
     </div>
     <div id = "gameListPage" style='display:none;'>
         <h1>Le Val Des Etoiles</h1>

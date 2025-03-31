@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="val.css">
+    <title>Counters</title>
+</head>
+<body>
+    <h1>Counters</h1>
+    <div class="counter-container">
+        <div class="counter" id="counter1">
+            <button onclick="decrementCounter('counter1')">-</button>
+            <span id="counter1Value">25</span>
+            <button onclick="incrementCounter('counter1')">+</button>
+        </div>
+        <div class="counter" id="counter2">
+            <button onclick="decrementCounter('counter2')">-</button>
+            <span id="counter2Value">25</span>
+            <button onclick="incrementCounter('counter2')">+</button>
+        </div>
+    </div>
+    
+    <div class="reset-container">
+        <button onclick="resetCounters(25)">Reset</button>
+        <button onclick="resetCounters(36)">Helios Reset</button>
+    </div>
+    <button id="backButton">Back to Game</button>
+    <script>
+        function incrementCounter(counterId) {
+            const counterValueElem = document.getElementById(counterId + 'Value');
+            let currentValue = parseInt(counterValueElem.textContent);
+            counterValueElem.textContent = currentValue + 1;
+        }
+
+        function decrementCounter(counterId) {
+            const counterValueElem = document.getElementById(counterId + 'Value');
+            let currentValue = parseInt(counterValueElem.textContent);
+            counterValueElem.textContent = currentValue - 1;
+        }
+
+        document.getElementById('backButton').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+        
+        function resetCounters(value) {
+            document.getElementById('counter1Value').textContent = value;
+            document.getElementById('counter2Value').textContent = value;
+        }
+    </script>
+</body>
+</html>

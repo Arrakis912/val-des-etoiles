@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="val.css">
+    <link rel="stylesheet" href="rules.css">
+    <title>Rules of Le Val Des Etoiles</title>
+    <script type="module">
+        import { displayFormation } from './client.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('backButton').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            }); 
+            document.getElementById('formationSpectre').appendChild(displayFormation(['spirit', 'power', "weapon"]));
+            document.getElementById('formationChevalier').appendChild(displayFormation(['weapon', 'power', "heart"]));
+            document.getElementById('formationMagicien').appendChild(displayFormation(['spirit', 'power',"heart"]));
+            document.getElementById('formationAccompli').appendChild(displayFormation(['heart', 'weapon', 'spirit', 'power']));
+            document.getElementById('formationFou').appendChild(displayFormation(['weapon', 'power',"heart"]));
+            document.getElementById('formationEnfant').appendChild(displayFormation(['heart']));
+        });
+        window.GAMESTATUS = {phase:-3}
+    </script>
+</head>
+<body>
+    <h1>Rules of Le Val Des Etoiles</h1>
+    <div id="rulesContent">
+        <h2>Formations</h2>
+        <div class="grid-container">
+            <div class="grid-item">
+                <h3>Spectre</h3>
+                <div id="formationSpectre"></div>
+                <p>
+                    Emprunte 5 points de majesté à son étoile.<br>
+                    Attire les attaques de l'esprit adverse.<br>
+                    Permet à son étoile pour toute pioche de piocher à la rivière
+                </p>
+            </div>
+            <div class="grid-item">
+                <h3>Chevalier</h3>
+                <div id="formationChevalier"></div>
+                <p>
+                    Bonus : +1 à l'arme<br>
+                </p>
+            </div>
+            <div class="grid-item">
+                <h3>Magicien</h3>
+                <div id="formationMagicien"></div>
+                <p>
+                    Bonus : +1 à l'esprit<br>
+                    Quand il contribue à arracher un pouvoir, son étoile pioche 1 carte
+                </p>
+            </div>
+            <div class="grid-item">
+                <h3>Accompli</h3>
+                <div id="formationAccompli"></div>
+                <p>
+                    pas de bonus ou effets<br>
+                </p>
+            </div>
+            <div class="grid-item">
+                <h3>Fou</h3>
+                <div id="formationFou"></div>
+                <p>
+                    Bonus : +1 au pouvoir<br>
+                    Quand il utilise son pouvoir pour piocher, pioche 2
+                </p>
+            </div>
+            <div class="grid-item">
+                <h3>Enfant</h3>
+                <div id="formationEnfant"></div>
+                <p>
+                    Bonus : +1 au coeur<br>
+                    Quand son coeur est arraché, l'étoile qui a attaqué perd 5 de majesté
+                </p>
+            </div>
+        </div>
+        <h2>Regles Spéciales :</h2>
+        <p>Spectre amoureux : Dame noire ou Spectre royal</p>
+        <p>Antares : Hommes-Liges, être possédés et messianiques</p>
+        <p>Helios : Bonus de pioche de Magicien et Fou augmentés de 1. Majesté initiale de 36 au lieu de 25</p>
+    </div>
+    <button id="backButton">Back to Game</button>
+    
+</body>
+</html>
