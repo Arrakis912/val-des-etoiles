@@ -8,19 +8,65 @@ function updateUIInterval(){
 }
 
 export function getRanking(){
-    // const url = "localhost:8081";
-    const url = "51.38.238.74:8081";
-    QueryManager.getScoresRequest(url);
+    QueryManager.getScoresRequest();
 }
+
+export function setScore(){
+    QueryManager.setScoreRequest(window.STARNAME, document.getElementById("score").value);
+}
+
+export function displayRanking(){
+    if(typeof window.RANKING !== "undefined"){
+        let grid = document.getElementById("RankingGrid");
+        window.RANKING.forEach(rankedStar => {
+            let rankedStarElem = document.createElement('div');
+            rankedStarElem.classList.add('starEntry');
+            rankedStarElem.innerHTML = `${translateMirrorRanksToNames(rankedStar.rank)} - ${rankedStar.name} - ${rankedStar.score}`;
+            grid.appendChild(rankedStarElem);
+        });
+    }
+    else{
+        console.log("waiting for ranking to display...")
+        setTimeout(displayRanking, 250);
+    } 
+}
+
+function translateMirrorRanksToNames(rank){
+        switch (rank) {
+        case 1:
+            return "Séléné";
+        case 2:
+            return "Mercure";
+        case 3:
+            return "Venus";
+        case 4:
+            return "Mars";
+        case 5:
+            return "Jupiter";
+        case 6:
+            return "Saturne";
+        case 7:
+            return "Uranus";
+        case 8:
+            return "Neptune";
+        }
+        return rank;
+    }
 
 export function connect(){
     const name = document.getElementById('input_name').value;
-    // const url = "localhost:8081";
-    const url = "51.38.238.74:8081";
-    console.log(`client connect function with name ${name} and url ${url}`);
-    
-    QueryManager.connectRequest(url, name);
-    window.updateInterval = setInterval(updateUIInterval, 500);
+    if(isValidName(name)){
+        QueryManager.connectRequest(name);
+        window.updateInterval = setInterval(updateUIInterval, 500);
+    }
+}
+
+function isValidName(name){
+    let valid = true;
+    if(name == "" || name == " "){
+        valid = false;
+    }
+    return valid;
 }
 
 export function makeNewGame(){

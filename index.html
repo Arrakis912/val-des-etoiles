@@ -5,13 +5,15 @@
     <link rel="stylesheet" href="val.css">
     <!-- Packed application javascript -->
     <script type="module">
-        import { connect,makeNewGame,backToList,disconnect } from './client.js';
+        import { connect,makeNewGame,backToList,disconnect, getRanking, setScore } from './client.js';
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('connectButton').addEventListener('click', connect);
             document.getElementById('newGameButton').addEventListener('click', makeNewGame);
             document.getElementById('backToListButton').addEventListener('click', backToList);
             document.getElementById('DisconnectButton').addEventListener('click', disconnect);
+            document.getElementById('setScoreButton').addEventListener('click', setScore);
         });
+        getRanking();
     </script>
 </head>
 <body>
@@ -19,7 +21,7 @@
     <div id = "initPage">
         <h1>Le Val Des Etoiles</h1>
         <label for="fname">Nom d'étoile</label>
-        <input type="text" id="input_name" value="Arrakis"><br><br>
+        <input type="text" id="input_name" value=""><br><br>
         <!-- <label for="fname">Serveur</label>
         <input type="text" id="input_url" value="localhost:8080"><br><br> -->
         <button id="connectButton">Se connecter</button>
@@ -30,18 +32,19 @@
     <div id = "gameListPage" style='display:none;'>
         <h1>Le Val Des Etoiles</h1>
         <label id="welcome">Bienvenu, étoile</label><br><br>
+        <label>Force Celeste : </label><br><input type="number" id="score" value="0"></input><button id="setScoreButton">Mettre à Jour</button><br>
+        <label>Parties en Cours :</label><br><br>
         <div id="GameList"></div><br><br>
         <div id="makeNewGameArea">
-            <label>Créer Nouveau Val :</label><br><br>
+            <label>Créer Nouveau Val :</label><br>
             <label for="fname">Nom</label>
-            <input type="text" id="input_gameName" value=""><br><br>
+            <input type="text" id="input_gameName" value=""><br>
             <label for="fname">Regles</label>
             <select id="input_ruleSet">
                 <option value="Helios">Helios</option>
                 <option value="Antares">Antares</option>
-            </select><br><br>
-            <button id="newGameButton">Creation</button><br><br>
-        </div>
+            </select><button id="newGameButton">Creation</button>
+        </div><br><br>
         <button id="DisconnectButton">Deconnecter</button>
     </div>
     <div id = "gameBoard" style='display:none;'>

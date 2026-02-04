@@ -1491,11 +1491,11 @@ function getRankings(){
         return;
     }
     rankings = JSON.parse(data);
-    console.log(rankings);
     });
 }
 
 function updateRankings(name,score){
+    console.log(`updating score of ${name} to ${score}`);
     let changed = false;
     let foundStar = false;
     rankings.forEach(star => {
@@ -1512,7 +1512,7 @@ function updateRankings(name,score){
         changed = true;
     }
     if (changed){
-        rankings.sort((a,b)=>a.score-b.score);
+        rankings.sort((a,b)=>b.score-a.score);//inverse order !
         for (let index = 0; index < rankings.length; index++) {
             rankings[index].rank = index+1;
         }
