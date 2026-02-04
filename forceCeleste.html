@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="val.css">
+    <link rel="stylesheet" href="forceCeleste.css">
+    <title>Star Power Ranking</title>
+    <script type="module">
+        import { getRanking } from './client.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('backButton').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            }); 
+            getRanking();
+        });
+        window.GAMESTATUS = {phase:-3}
+    </script>
+</head>
+<body>
+    <h1>Classement des Forces Célestes</h1>
+    <div>
+        <div id="RankingGrid" class="grid-container">
+            
+        </div>
+    <button id="backButton">Retour Menu</button>
+    
+</body>
+</html>

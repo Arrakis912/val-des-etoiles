@@ -135,6 +135,41 @@ export class QueryManager{
         });
     }
 
+    static getScoresRequest(url){
+        this.makeRequest('POST', url, JSON.stringify({cmd: 'getRanking'}),(res)=>{
+            let grid = document.getElementById("RankingGrid");
+            const body = JSON.parse(res);
+            body.ranking.forEach(rankedStar => {
+                let rankedStarElem = document.createElement('div');
+                rankedStarElem.classList.add('starEntry');
+                rankedStarElem.innerHTML = `${this.translateMirrorRanksToNames(rankedStar.rank)} - ${rankedStar.name} - ${rankedStar.score}`;
+                grid.appendChild(rankedStarElem);
+            });
+        });
+    }
+
+    static translateMirrorRanksToNames(rank){
+        switch (rank) {
+        case 1:
+            return "Séléné";
+        case 2:
+            return "Mercure";
+        case 3:
+            return "Venus";
+        case 4:
+            return "Mars";
+        case 5:
+            return "Jupiter";
+        case 6:
+            return "Saturne";
+        case 7:
+            return "Uranus";
+        case 8:
+            return "Neptune";
+        }
+        return rank;
+    }
+
     static disconnectRequest(){
         this.makeRequest('POST', window.SERVERURL, JSON.stringify({cmd: 'disconnect', name: window.STARNAME}),(res)=>{
             console.log('disconnected!');

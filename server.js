@@ -1,4 +1,6 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const hostname = '0.0.0.0';
 const port = 8081;
@@ -1479,6 +1481,50 @@ class GameStatus{
 
 let playerList = [];
 let gameList = [];
+let rankings = [];
+getRankings();
+
+function getRankings(){
+    fs.readFile(path.resolve(__dirname, 'rankings.json'), 'utf8', (err, data) => {
+    if (err) {
+        console.error(err);
+        return;
+    }
+    rankings = JSON.parse(data);
+    console.log(rankings);
+    });
+}
+
+function updateRankings(name,score){
+    let changed = false;
+    let foundStar = false;
+    rankings.forEach(star => {
+        if(star.name == name){
+            foundStar = true;
+            if(star.score!=score){
+                star.score = score;
+                changed = true;
+            }
+        }
+    });
+    if(!foundStar){
+        rankings.push({name, score, "rank" : 0});
+        changed = true;
+    }
+    if (changed){
+        rankings.sort((a,b)=>a.score-b.score);
+        for (let index = 0; index < rankings.length; index++) {
+            rankings[index].rank = index+1;
+        }
+
+        fs.writeFile(path.resolve(__dirname, 'rankings.json'),JSON.stringify(rankings), (err) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        });
+    }
+}
 
 const server = http.createServer((req, res) => {
     const { headers, method, url } = req;
@@ -1526,6 +1572,15 @@ function processQuery(url, method, body){
     let statusCode = 200;
     let returnBody = '{"response":"default"}';
     switch (body.cmd) {
+        case "getRanking":{
+            returnBody = JSON.stringify({"ranking":rankings});
+            break;
+        }
+        case "updateRanking":{
+            updateRankings(body.name,body.score);
+            returnBody = JSON.stringify({"ranking":rankings});
+            break;
+        }
         case "connect":{
             const starName = body.name;
             connectPlayer(starName);

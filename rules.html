@@ -18,12 +18,13 @@
             document.getElementById('formationAccompli').appendChild(displayFormation(['heart', 'weapon', 'spirit', 'power']));
             document.getElementById('formationFou').appendChild(displayFormation(['weapon', 'power',"heart"]));
             document.getElementById('formationEnfant').appendChild(displayFormation(['heart']));
+            document.getElementById('formationOmbre').appendChild(displayFormation(['power']));
         });
         window.GAMESTATUS = {phase:-3}
     </script>
 </head>
 <body>
-    <h1>Rules of Le Val Des Etoiles</h1>
+    <h1>Règles du Val Des Etoiles</h1>
     <div id="rulesContent">
         <h2>Formations</h2>
         <div class="grid-container">
@@ -79,6 +80,17 @@
         <p>Spectre amoureux : Dame noire ou Spectre royal</p>
         <p>Antares : Hommes-Liges, être possédés et messianiques</p>
         <p>Helios : Bonus de pioche de Magicien et Fou augmentés de 1. Majesté initiale de 36 au lieu de 25</p>
+        <div class="grid-container">
+            <div class="grid-item">
+                    <h3>Ombre</h3>
+                    <div id="formationOmbre"></div>
+                    <p>
+                        Pas de bonus particulier. Uniquement disponible en Helios.
+                        Peut être éduqué par l'ajout, y compris au coeur.
+                    </p>
+                    </div>
+            </div>
+        </div>
     </div>
     <button id="backButton">Back to Game</button>
     

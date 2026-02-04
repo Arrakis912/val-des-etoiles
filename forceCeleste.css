@@ -1,0 +1,26 @@
+#rulesContent {
+    margin: 20px;
+}
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(200px, 1fr));
+    gap: 20px;
+}
+.grid-item {
+    padding: 10px;
+    text-align: center;
+    border-color:white;
+    border-style: dotted;
+}
+.grid-item h3 {
+    margin-top: 0;
+}
+.grid-item p {
+    margin-bottom: 0;
+}
+#backButton {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}

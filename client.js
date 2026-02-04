@@ -7,6 +7,12 @@ function updateUIInterval(){
     }
 }
 
+export function getRanking(){
+    // const url = "localhost:8081";
+    const url = "51.38.238.74:8081";
+    QueryManager.getScoresRequest(url);
+}
+
 export function connect(){
     const name = document.getElementById('input_name').value;
     // const url = "localhost:8081";
